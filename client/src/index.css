@@ -1,0 +1,262 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+/* ===== Spider-Verse Design System ===== */
+
+@theme {
+  --color-spider-red: #DC143C;
+  --color-spider-red-dark: #8B0000;
+  --color-spider-red-light: #FF4466;
+  --color-spider-blue: #1E3A8A;
+  --color-spider-blue-dark: #0F1D45;
+  --color-spider-blue-light: #3B82F6;
+  --color-spider-gold: #FFD700;
+  --color-spider-purple: #7C3AED;
+  --color-verse-bg: #050510;
+  --color-verse-surface: #0D1117;
+  --color-verse-panel: #161B22;
+  --color-verse-border: #21262D;
+  --color-verse-text: #E6EDF3;
+  --color-verse-muted: #8B949E;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--color-verse-bg); }
+::-webkit-scrollbar-thumb { background: var(--color-spider-red); border-radius: 3px; }
+
+/* ===== Animations ===== */
+@keyframes web-swing {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px var(--color-spider-red), 0 0 10px rgba(220,20,60,0.3); }
+  50% { box-shadow: 0 0 20px var(--color-spider-red), 0 0 40px rgba(220,20,60,0.5); }
+}
+
+@keyframes xp-fill {
+  from { width: 0%; }
+}
+
+@keyframes float-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes web-pattern {
+  0% { background-position: 0 0; }
+  100% { background-position: 50px 50px; }
+}
+
+@keyframes spider-crawl {
+  0% { transform: translateY(-100%); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* ===== Web Pattern Overlay ===== */
+.web-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.03;
+  background-image:
+    radial-gradient(circle at center, transparent 0%, transparent 30%, rgba(220,20,60,0.1) 31%, transparent 32%),
+    linear-gradient(0deg, transparent 49%, rgba(220,20,60,0.05) 50%, transparent 51%),
+    linear-gradient(90deg, transparent 49%, rgba(220,20,60,0.05) 50%, transparent 51%);
+  background-size: 60px 60px, 30px 30px, 30px 30px;
+  animation: web-pattern 4s linear infinite;
+}
+
+/* ===== Glass Card ===== */
+.glass-card {
+  background: linear-gradient(135deg, rgba(13,17,23,0.9), rgba(22,27,34,0.8));
+  border: 1px solid var(--color-verse-border);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: var(--color-spider-red);
+  box-shadow: 0 0 20px rgba(220,20,60,0.15);
+}
+
+/* ===== Quest Card Type Indicators ===== */
+.quest-spider { border-left: 3px solid var(--color-spider-red); }
+.quest-side { border-left: 3px solid var(--color-spider-blue-light); }
+.quest-exploration { border-left: 3px solid var(--color-spider-gold); }
+.quest-creativity { border-left: 3px solid var(--color-spider-purple); }
+.quest-physical { border-left: 3px solid #10B981; }
+
+/* ===== Spider Button ===== */
+.spider-btn {
+  background: linear-gradient(135deg, var(--color-spider-red), var(--color-spider-red-dark));
+  color: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.spider-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(220,20,60,0.4);
+}
+
+.spider-btn:active {
+  transform: translateY(0);
+}
+
+.spider-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%);
+  transform: translateX(-100%);
+  transition: transform 0.5s;
+}
+
+.spider-btn:hover::after {
+  transform: translateX(100%);
+}
+
+/* ===== XP Bar ===== */
+.xp-bar-container {
+  background: var(--color-verse-panel);
+  border-radius: 999px;
+  height: 16px;
+  overflow: hidden;
+  border: 1px solid var(--color-verse-border);
+}
+
+.xp-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-spider-red), var(--color-spider-red-light), var(--color-spider-gold));
+  animation: xp-fill 1s ease-out;
+  transition: width 0.8s ease;
+  position: relative;
+}
+
+.xp-bar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: web-pattern 2s linear infinite;
+}
+
+/* ===== Skill Node ===== */
+.skill-node {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.skill-node:hover {
+  filter: brightness(1.3);
+  transform: scale(1.1);
+}
+
+/* ===== Auth Pages ===== */
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-verse-bg);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-container::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(220,20,60,0.15), transparent 60%);
+  top: -200px;
+  right: -200px;
+  border-radius: 50%;
+}
+
+.auth-container::after {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(30,58,138,0.2), transparent 60%);
+  bottom: -100px;
+  left: -100px;
+  border-radius: 50%;
+}
+
+/* ===== Input ===== */
+.spider-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--color-verse-surface);
+  border: 1px solid var(--color-verse-border);
+  border-radius: 10px;
+  color: var(--color-verse-text);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.spider-input:focus {
+  border-color: var(--color-spider-red);
+  box-shadow: 0 0 0 3px rgba(220,20,60,0.15);
+}
+
+.spider-input::placeholder {
+  color: var(--color-verse-muted);
+}
+
+/* ===== Nav ===== */
+.nav-link {
+  color: var(--color-verse-muted);
+  transition: all 0.3s ease;
+  position: relative;
+  padding: 8px 16px;
+  border-radius: 8px;
+}
+
+.nav-link:hover, .nav-link.active {
+  color: var(--color-spider-red);
+  background: rgba(220,20,60,0.1);
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background: var(--color-spider-red);
+  border-radius: 1px;
+}
+
+/* Base Styles */
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-verse-bg);
+  color: var(--color-verse-text);
+  font-family: var(--font-sans);
+}
+
+* { box-sizing: border-box; }
+
+a { text-decoration: none; color: inherit; }
