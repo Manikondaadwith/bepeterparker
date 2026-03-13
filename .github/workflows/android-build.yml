@@ -1,3 +1,7 @@
-git add .
-git commit -m "add android apk build workflow"
-git push
+Checkout repo
+Setup Node
+Install dependencies
+Build web app
+Sync Capacitor
+Setup Java
+Build APK
