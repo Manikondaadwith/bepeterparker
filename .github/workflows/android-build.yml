@@ -1,55 +1,57 @@
 name: Build Android APK
 
 on:
-  workflow_dispatch:
+workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+build:
+runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+```
+steps:
+  - name: Checkout Repository
+    uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
+  - name: Setup Node.js
+    uses: actions/setup-node@v4
+    with:
+      node-version: 18
 
-	- name: Clean install dependencies
-  	  run: |
-    	   cd client
-    	   rm -rf node_modules
-    	   rm -f package-lock.json
-    	   npm install
+  - name: Clean install client dependencies
+    run: |
+      cd client
+      rm -rf node_modules
+      rm -f package-lock.json
+      npm install
 
-      - name: Build web app
-        run: |
-          cd client
-          npm run build
+  - name: Build web app
+    run: |
+      cd client
+      npm run build
 
-      - name: Sync Capacitor Android
-        run: |
-          cd client
-          npx cap sync android
+  - name: Sync Capacitor Android
+    run: |
+      cd client
+      npx cap sync android
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+  - name: Setup Java
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: 17
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+  - name: Setup Android SDK
+    uses: android-actions/setup-android@v3
 
-      - name: Build Debug APK
-        run: |
-          cd client/android
-          chmod +x gradlew
-          ./gradlew assembleDebug
+  - name: Build Debug APK
+    run: |
+      cd client/android
+      chmod +x gradlew
+      ./gradlew assembleDebug
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: spiderverse-apk
-          path: client/android/app/build/outputs/apk/debug/app-debug.apk
+  - name: Upload APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: spiderverse-apk
+      path: client/android/app/build/outputs/apk/debug/app-debug.apk
+```
