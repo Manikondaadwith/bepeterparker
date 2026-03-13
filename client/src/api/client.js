@@ -46,8 +46,9 @@ async function request(endpoint, options = {}) {
 
 export const api = {
   // Auth
-  signup: (data) => request('/auth/signup', { method: 'POST', body: JSON.stringify(data) }),
-  login: (data) => request('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+  requestOtp: (email) => request('/auth/request-otp', { method: 'POST', body: JSON.stringify({ email }) }),
+  verifyOtp: (email, otp) => request('/auth/verify-otp', { method: 'POST', body: JSON.stringify({ email, otp }) }),
+  updateUsername: (username) => request('/auth/username', { method: 'PUT', body: JSON.stringify({ username }) }),
   getMe: () => request('/auth/me'),
 
   // Quests

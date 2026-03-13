@@ -1,4 +1,4 @@
-import db from '../db/schema.js';
+import { supabase } from '../db/supabase.js';
 
 // XP required to reach a given level: 100 * level^1.5
 export function xpRequiredForLevel(level) {
@@ -27,17 +27,28 @@ export function getXpProgress(user) {
 }
 
 // Award XP and handle level ups
-export function awardXP(userId, baseXP) {
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
-  if (!user) return null;
+export async function awardXP(userId, baseXP) {
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single();
+    
+  if (userError || !user) return null;
 
   // Streak bonus: +5% per streak day, max +50%
   const streakBonus = Math.min(0.5, user.streak * 0.05);
 
   // Check for active random events
-  const activeEvent = db.prepare(
-    'SELECT * FROM random_events WHERE user_id = ? AND active = 1 ORDER BY created_at DESC LIMIT 1'
-  ).get(userId);
+  const { data: activeEvent } = await supabase
+    .from('random_events')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('active', 1)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+    
   const eventModifier = activeEvent ? activeEvent.xp_modifier : 1.0;
 
   const totalXP = Math.floor(baseXP * (1 + streakBonus) * eventModifier);
@@ -51,10 +62,13 @@ export function awardXP(userId, baseXP) {
 
   const leveledUp = newLevel > user.level;
 
-  db.prepare('UPDATE users SET xp = ?, level = ? WHERE id = ?').run(newXP, newLevel, userId);
+  await supabase
+    .from('users')
+    .update({ xp: newXP, level: newLevel })
+    .eq('id', userId);
 
   // Check level-based achievements
-  checkLevelAchievements(userId, newLevel);
+  await checkLevelAchievements(userId, newLevel);
 
   return {
     xpGained: totalXP,
@@ -66,7 +80,7 @@ export function awardXP(userId, baseXP) {
   };
 }
 
-function checkLevelAchievements(userId, level) {
+async function checkLevelAchievements(userId, level) {
   const milestones = [
     { level: 5, name: 'Friendly Neighborhood', desc: 'Reached Level 5', icon: '🏘️' },
     { level: 10, name: 'Web Warrior', desc: 'Reached Level 10', icon: '⚔️' },
@@ -76,22 +90,32 @@ function checkLevelAchievements(userId, level) {
 
   for (const m of milestones) {
     if (level >= m.level) {
-      try {
-        db.prepare(
-          'INSERT OR IGNORE INTO achievements (user_id, name, description, icon, category) VALUES (?, ?, ?, ?, ?)'
-        ).run(userId, m.name, m.desc, m.icon, 'level');
-      } catch (e) { /* ignore */ }
+      // Supabase UNIQUE constraint automatically ignores if it already exists
+      await supabase
+        .from('achievements')
+        .insert([{
+          user_id: userId,
+          name: m.name,
+          description: m.desc,
+          icon: m.icon,
+          category: 'level'
+        }])
+        .select()
+        .maybeSingle(); // Prevents throwing error intentionally on duplicate
     }
   }
 }
 
 // Random event generator
-export function maybeGenerateRandomEvent(userId) {
+export async function maybeGenerateRandomEvent(userId) {
   // 15% chance of a random event per day
   if (Math.random() > 0.15) return null;
 
   // Deactivate old events
-  db.prepare('UPDATE random_events SET active = 0 WHERE user_id = ?').run(userId);
+  await supabase
+    .from('random_events')
+    .update({ active: 0 })
+    .eq('user_id', userId);
 
   const events = [
     { type: 'symbiote_surge', title: '🖤 Symbiote Surge', desc: 'Dark energy amplifies your learning! Double XP for all quests today.', mod: 2.0 },
@@ -103,9 +127,15 @@ export function maybeGenerateRandomEvent(userId) {
 
   const event = events[Math.floor(Math.random() * events.length)];
 
-  db.prepare(
-    'INSERT INTO random_events (user_id, event_type, title, description, xp_modifier) VALUES (?, ?, ?, ?, ?)'
-  ).run(userId, event.type, event.title, event.desc, event.mod);
+  await supabase
+    .from('random_events')
+    .insert([{
+      user_id: userId,
+      event_type: event.type,
+      title: event.title,
+      description: event.desc,
+      xp_modifier: event.mod
+    }]);
 
   return event;
 }

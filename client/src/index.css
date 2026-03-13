@@ -21,10 +21,51 @@
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* ===== Scrollbar ===== */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--color-verse-bg); }
-::-webkit-scrollbar-thumb { background: var(--color-spider-red); border-radius: 3px; }
+/* ===== Base + Mobile-First Resets ===== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-verse-bg);
+  color: var(--color-verse-text);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* Prevent horizontal overflow on all containers */
+.max-w-6xl, .max-w-4xl, .max-w-md {
+  max-width: 100%;
+}
+
+/* ===== Scrollbar (desktop only) ===== */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--color-verse-bg); }
+  ::-webkit-scrollbar-thumb { background: var(--color-spider-red); border-radius: 3px; }
+}
+
+/* Hide scrollbar on mobile for smoother feel */
+@media (max-width: 767px) {
+  ::-webkit-scrollbar { display: none; }
+  body { scrollbar-width: none; }
+}
 
 /* ===== Animations ===== */
 @keyframes web-swing {
@@ -79,11 +120,23 @@
   border-radius: 16px;
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
-.glass-card:hover {
-  border-color: var(--color-spider-red);
-  box-shadow: 0 0 20px rgba(220,20,60,0.15);
+/* Reduce hover effects on touch devices */
+@media (hover: hover) {
+  .glass-card:hover {
+    border-color: var(--color-spider-red);
+    box-shadow: 0 0 20px rgba(220,20,60,0.15);
+  }
+}
+
+/* Mobile: slightly smaller border-radius */
+@media (max-width: 430px) {
+  .glass-card {
+    border-radius: 12px;
+  }
 }
 
 /* ===== Quest Card Type Indicators ===== */
@@ -105,11 +158,25 @@
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  /* Prevent text from overflowing */
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.spider-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(220,20,60,0.4);
+/* Mobile: slightly smaller padding */
+@media (max-width: 430px) {
+  .spider-btn {
+    padding: 10px 16px;
+    font-size: 0.875rem;
+    border-radius: 10px;
+  }
+}
+
+@media (hover: hover) {
+  .spider-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(220,20,60,0.4);
+  }
 }
 
 .spider-btn:active {
@@ -125,8 +192,10 @@
   transition: transform 0.5s;
 }
 
-.spider-btn:hover::after {
-  transform: translateX(100%);
+@media (hover: hover) {
+  .spider-btn:hover::after {
+    transform: translateX(100%);
+  }
 }
 
 /* ===== XP Bar ===== */
@@ -136,6 +205,12 @@
   height: 16px;
   overflow: hidden;
   border: 1px solid var(--color-verse-border);
+}
+
+@media (max-width: 430px) {
+  .xp-bar-container {
+    height: 12px;
+  }
 }
 
 .xp-bar-fill {
@@ -169,12 +244,14 @@
 /* ===== Auth Pages ===== */
 .auth-container {
   min-height: 100vh;
+  min-height: 100dvh; /* dynamic viewport height for mobile */
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--color-verse-bg);
   position: relative;
   overflow: hidden;
+  padding: 16px;
 }
 
 .auth-container::before {
@@ -199,6 +276,13 @@
   border-radius: 50%;
 }
 
+/* Mobile auth adjustments */
+@media (max-width: 430px) {
+  .auth-container .glass-card {
+    padding: 24px 20px !important;
+  }
+}
+
 /* ===== Input ===== */
 .spider-input {
   width: 100%;
@@ -207,9 +291,11 @@
   border: 1px solid var(--color-verse-border);
   border-radius: 10px;
   color: var(--color-verse-text);
-  font-size: 0.95rem;
+  font-size: 16px; /* Prevents iOS zoom on focus */
   transition: all 0.3s ease;
   outline: none;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .spider-input:focus {
@@ -221,7 +307,7 @@
   color: var(--color-verse-muted);
 }
 
-/* ===== Nav ===== */
+/* ===== Desktop Nav ===== */
 .nav-link {
   color: var(--color-verse-muted);
   transition: all 0.3s ease;
@@ -247,16 +333,80 @@
   border-radius: 1px;
 }
 
-/* Base Styles */
-
-body {
-  margin: 0;
-  padding: 0;
-  background: var(--color-verse-bg);
-  color: var(--color-verse-text);
-  font-family: var(--font-sans);
+/* ===== Mobile Top Bar ===== */
+.mobile-top-bar {
+  background: linear-gradient(180deg, rgba(5,5,16,0.97), rgba(5,5,16,0.85));
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--color-verse-border);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
-* { box-sizing: border-box; }
+/* ===== Mobile Bottom Tab Bar ===== */
+.mobile-bottom-bar {
+  background: linear-gradient(0deg, rgba(5,5,16,0.97), rgba(5,5,16,0.85));
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--color-verse-border);
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+}
 
-a { text-decoration: none; color: inherit; }
+.mobile-tab-link {
+  color: var(--color-verse-muted);
+  min-width: 56px;
+  transition: color 0.2s;
+}
+
+.mobile-tab-link.active {
+  color: var(--color-spider-red);
+}
+
+.mobile-tab-link.active span:first-child {
+  filter: drop-shadow(0 0 4px rgba(220,20,60,0.6));
+}
+
+/* ===== Page Layout Helpers ===== */
+
+/* Desktop: account for top navbar */
+.page-container {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 80px 16px 32px;
+  background: var(--color-verse-bg);
+}
+
+/* Mobile: account for top header + bottom tab bar */
+@media (max-width: 767px) {
+  .page-container {
+    padding: 68px 12px 88px;
+  }
+}
+
+/* Mobile content wrapper — prevents overflow */
+.mobile-safe {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ===== Utility: Truncate text ===== */
+.truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.truncate-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ===== PWA Standalone Mode Styles ===== */
+@media (display-mode: standalone) {
+  .mobile-top-bar {
+    padding-top: env(safe-area-inset-top, 20px);
+  }
+  .mobile-bottom-bar {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+}

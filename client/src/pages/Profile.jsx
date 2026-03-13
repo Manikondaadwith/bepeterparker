@@ -24,7 +24,7 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center pt-16" style={{ background: 'var(--color-verse-bg)' }}>
+      <div className="page-container flex items-center justify-center">
         <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}>
           <span className="text-5xl">🕸️</span>
         </motion.div>
@@ -37,21 +37,21 @@ export default function Profile() {
   const xp = profile.xpProgress;
 
   return (
-    <div className="min-h-screen pt-20 pb-8 px-4" style={{ background: 'var(--color-verse-bg)' }}>
-      <div className="max-w-4xl mx-auto">
+    <div className="page-container">
+      <div className="max-w-4xl mx-auto mobile-safe">
         {/* Hero Card */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-card p-8 mb-8 relative overflow-hidden"
+          className="glass-card p-5 sm:p-8 mb-5 sm:mb-8 relative overflow-hidden"
         >
           <div className="absolute inset-0 opacity-5"
             style={{ background: 'radial-gradient(circle at 80% 20%, var(--color-spider-red), transparent 50%)' }} />
-          <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
+          <div className="relative z-10 flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
             <motion.div
               animate={{ rotate: [0, 5, -5, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              className="w-24 h-24 rounded-2xl flex items-center justify-center text-5xl"
+              className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center text-3xl sm:text-5xl shrink-0"
               style={{
                 background: 'linear-gradient(135deg, var(--color-spider-red), var(--color-spider-red-dark))',
                 boxShadow: '0 0 30px rgba(220,20,60,0.3)'
@@ -59,17 +59,17 @@ export default function Profile() {
             >
               🕷️
             </motion.div>
-            <div className="text-center md:text-left">
-              <h1 className="text-3xl font-extrabold">{profile.user.username}</h1>
-              <p className="text-sm mt-1" style={{ color: 'var(--color-verse-muted)' }}>
+            <div className="text-center sm:text-left min-w-0">
+              <h1 className="text-xl sm:text-3xl font-extrabold">{profile.user.username}</h1>
+              <p className="text-xs sm:text-sm mt-1 truncate" style={{ color: 'var(--color-verse-muted)' }}>
                 {profile.user.email}
               </p>
-              <div className="flex items-center gap-4 mt-3 flex-wrap justify-center md:justify-start">
-                <span className="text-sm font-semibold px-3 py-1 rounded-full"
+              <div className="flex items-center gap-2 sm:gap-4 mt-2 sm:mt-3 flex-wrap justify-center sm:justify-start">
+                <span className="text-xs sm:text-sm font-semibold px-2.5 sm:px-3 py-1 rounded-full"
                   style={{ background: 'rgba(255,215,0,0.15)', color: 'var(--color-spider-gold)' }}>
                   ⚡ Level {profile.user.level}
                 </span>
-                <span className="text-sm" style={{ color: 'var(--color-verse-muted)' }}>
+                <span className="text-[10px] sm:text-sm" style={{ color: 'var(--color-verse-muted)' }}>
                   Joined {new Date(profile.user.created_at).toLocaleDateString()}
                 </span>
               </div>
@@ -77,8 +77,8 @@ export default function Profile() {
           </div>
 
           {/* XP Bar */}
-          <div className="mt-6">
-            <div className="flex justify-between text-sm mb-2">
+          <div className="mt-4 sm:mt-6">
+            <div className="flex justify-between text-xs sm:text-sm mb-2">
               <span>Level {profile.user.level} Progress</span>
               <span style={{ color: 'var(--color-verse-muted)' }}>{Math.floor(xp.currentXp)} / {xp.requiredXp} XP</span>
             </div>
@@ -90,14 +90,14 @@ export default function Profile() {
                 transition={{ duration: 1.5 }}
               />
             </div>
-            <p className="text-xs mt-2" style={{ color: 'var(--color-verse-muted)' }}>
+            <p className="text-[10px] sm:text-xs mt-2" style={{ color: 'var(--color-verse-muted)' }}>
               Total XP: {profile.user.xp.toLocaleString()}
             </p>
           </div>
         </motion.div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 mb-5 sm:mb-8">
           {[
             { icon: '📋', label: 'Quests Done', value: profile.stats.totalQuests, color: '#3B82F6' },
             { icon: '🧠', label: 'Skills', value: profile.stats.totalSkills, color: 'var(--color-spider-purple)' },
@@ -109,56 +109,48 @@ export default function Profile() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 * i }}
-              className="glass-card p-5 text-center"
+              className="glass-card p-3 sm:p-5 text-center"
             >
-              <div className="text-3xl mb-2">{stat.icon}</div>
-              <p className="text-2xl font-bold" style={{ color: stat.color }}>{stat.value}</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--color-verse-muted)' }}>{stat.label}</p>
+              <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">{stat.icon}</div>
+              <p className="text-lg sm:text-2xl font-bold" style={{ color: stat.color }}>{stat.value}</p>
+              <p className="text-[10px] sm:text-xs mt-1" style={{ color: 'var(--color-verse-muted)' }}>{stat.label}</p>
             </motion.div>
           ))}
         </div>
 
-        {/* Additional Stats */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="glass-card p-6 mb-8"
-        >
-          <h3 className="font-bold text-lg mb-4">📊 Performance Stats</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl" style={{ background: 'var(--color-verse-surface)' }}>
-              <p className="text-sm" style={{ color: 'var(--color-verse-muted)' }}>Days Active</p>
-              <p className="text-xl font-bold">{profile.stats.daysSinceJoin}</p>
+        {/* Performance Stats */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
+          className="glass-card p-4 sm:p-6 mb-5 sm:mb-8">
+          <h3 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">📊 Performance Stats</h3>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="p-3 sm:p-4 rounded-xl" style={{ background: 'var(--color-verse-surface)' }}>
+              <p className="text-xs sm:text-sm" style={{ color: 'var(--color-verse-muted)' }}>Days Active</p>
+              <p className="text-lg sm:text-xl font-bold">{profile.stats.daysSinceJoin}</p>
             </div>
-            <div className="p-4 rounded-xl" style={{ background: 'var(--color-verse-surface)' }}>
-              <p className="text-sm" style={{ color: 'var(--color-verse-muted)' }}>Quests/Day</p>
-              <p className="text-xl font-bold">{profile.stats.questsPerDay}</p>
+            <div className="p-3 sm:p-4 rounded-xl" style={{ background: 'var(--color-verse-surface)' }}>
+              <p className="text-xs sm:text-sm" style={{ color: 'var(--color-verse-muted)' }}>Quests/Day</p>
+              <p className="text-lg sm:text-xl font-bold">{profile.stats.questsPerDay}</p>
             </div>
           </div>
         </motion.div>
 
         {/* Top Skills */}
         {profile.topSkills?.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="glass-card p-6 mb-8"
-          >
-            <h3 className="font-bold text-lg mb-4">🏆 Top Skills</h3>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+            className="glass-card p-4 sm:p-6 mb-5 sm:mb-8">
+            <h3 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">🏆 Top Skills</h3>
             <div className="space-y-3">
               {profile.topSkills.map((skill, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <span className="text-lg w-8 text-center">{['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]}</span>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold text-sm">{skill.name}</span>
-                      <span className="text-xs" style={{ color: skill.color || 'var(--color-spider-red)' }}>
-                        {skill.xp} XP • {skill.quest_count} quests
+                <div key={i} className="flex items-center gap-3 sm:gap-4">
+                  <span className="text-base sm:text-lg w-6 sm:w-8 text-center shrink-0">{['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i]}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1 gap-2">
+                      <span className="font-semibold text-xs sm:text-sm truncate">{skill.name}</span>
+                      <span className="text-[10px] sm:text-xs shrink-0" style={{ color: skill.color || 'var(--color-spider-red)' }}>
+                        {skill.xp} XP
                       </span>
                     </div>
-                    <div className="h-2 rounded-full" style={{ background: 'var(--color-verse-surface)' }}>
+                    <div className="h-1.5 sm:h-2 rounded-full" style={{ background: 'var(--color-verse-surface)' }}>
                       <motion.div
                         className="h-full rounded-full"
                         style={{ background: skill.color || 'var(--color-spider-red)' }}
@@ -175,33 +167,26 @@ export default function Profile() {
         )}
 
         {/* Achievements */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          <h3 className="font-bold text-lg mb-4">🎖️ Achievements ({profile.achievements.length})</h3>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+          <h3 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">🎖️ Achievements ({profile.achievements.length})</h3>
           {profile.achievements.length === 0 ? (
-            <div className="glass-card p-8 text-center">
-              <p className="text-4xl mb-3">🕸️</p>
-              <p style={{ color: 'var(--color-verse-muted)' }}>Complete quests to unlock achievements</p>
+            <div className="glass-card p-6 sm:p-8 text-center">
+              <p className="text-3xl sm:text-4xl mb-3">🕸️</p>
+              <p className="text-xs sm:text-sm" style={{ color: 'var(--color-verse-muted)' }}>Complete quests to unlock achievements</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {profile.achievements.map((ach, i) => (
                 <motion.div
                   key={ach.id}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.7 + i * 0.05 }}
-                  className="glass-card p-4 text-center"
+                  className="glass-card p-3 sm:p-4 text-center"
                 >
-                  <div className="text-3xl mb-2">{ach.icon}</div>
-                  <p className="font-bold text-sm">{ach.name}</p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--color-verse-muted)' }}>{ach.description}</p>
-                  <p className="text-xs mt-2" style={{ color: 'var(--color-verse-muted)' }}>
-                    {new Date(ach.unlocked_at).toLocaleDateString()}
-                  </p>
+                  <div className="text-2xl sm:text-3xl mb-1 sm:mb-2">{ach.icon}</div>
+                  <p className="font-bold text-xs sm:text-sm">{ach.name}</p>
+                  <p className="text-[10px] sm:text-xs mt-1" style={{ color: 'var(--color-verse-muted)' }}>{ach.description}</p>
                 </motion.div>
               ))}
             </div>
@@ -214,12 +199,12 @@ export default function Profile() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
-            className="glass-card p-6 mt-8"
+            className="glass-card p-4 sm:p-6 mt-5 sm:mt-8"
             style={{ borderLeft: '3px solid var(--color-spider-gold)', background: 'rgba(255,215,0,0.05)' }}
           >
-            <h3 className="font-bold" style={{ color: 'var(--color-spider-gold)' }}>{profile.activeEvent.title}</h3>
-            <p className="text-sm mt-1" style={{ color: 'var(--color-verse-muted)' }}>{profile.activeEvent.description}</p>
-            <p className="text-xs mt-2" style={{ color: 'var(--color-spider-gold)' }}>
+            <h3 className="font-bold text-sm sm:text-base" style={{ color: 'var(--color-spider-gold)' }}>{profile.activeEvent.title}</h3>
+            <p className="text-xs sm:text-sm mt-1" style={{ color: 'var(--color-verse-muted)' }}>{profile.activeEvent.description}</p>
+            <p className="text-[10px] sm:text-xs mt-2" style={{ color: 'var(--color-spider-gold)' }}>
               XP Modifier: {profile.activeEvent.xp_modifier}x
             </p>
           </motion.div>

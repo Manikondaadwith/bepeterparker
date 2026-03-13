@@ -1,4 +1,4 @@
-import db from '../db/schema.js';
+import { supabase } from '../db/supabase.js';
 
 const DOMAIN_COLORS = [
   '#DC143C', '#1E90FF', '#FFD700', '#00FF7F', '#FF6347',
@@ -304,11 +304,16 @@ export async function fetchAllTopics() {
 }
 
 // Anti-repetition: filter out recently used topics
-function filterRecentTopics(userId, topics) {
+async function filterRecentTopics(userId, topics) {
   const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
-  const recentTopics = db.prepare(
-    'SELECT topic, domain FROM topic_history WHERE user_id = ? AND used_at > ?'
-  ).all(userId, sevenDaysAgo);
+  
+  const { data: recentTopics } = await supabase
+    .from('topic_history')
+    .select('topic, domain')
+    .eq('user_id', userId)
+    .gt('used_at', sevenDaysAgo);
+
+  if (!recentTopics) return topics;
 
   const recentSet = new Set(recentTopics.map(t => t.topic.toLowerCase()));
   const recentDomains = new Map();
@@ -380,17 +385,19 @@ export async function generateDailyQuests(userId) {
   const today = new Date().toISOString().split('T')[0];
 
   // Check if quests already exist for today
-  const existing = db.prepare(
-    'SELECT * FROM quests WHERE user_id = ? AND quest_date = ?'
-  ).all(userId, today);
+  const { data: existing } = await supabase
+    .from('quests')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('quest_date', today);
 
-  if (existing.length >= 6) return existing;
+  if (existing && existing.length >= 6) return existing;
 
   // Fetch fresh topics
   let topics = await fetchAllTopics();
 
   // Apply anti-repetition filter
-  topics = filterRecentTopics(userId, topics);
+  topics = await filterRecentTopics(userId, topics);
 
   // If not enough topics after filtering, use fallbacks
   if (topics.length < 6) {
@@ -413,7 +420,7 @@ export async function generateDailyQuests(userId) {
   // Shuffle
   topics.sort(() => Math.random() - 0.5);
 
-  const user = db.prepare('SELECT level FROM users WHERE id = ?').get(userId);
+  const { data: user } = await supabase.from('users').select('level').eq('id', userId).single();
   const levelMultiplier = 1 + (user?.level || 1) * 0.05;
 
   const questDefs = [
@@ -425,63 +432,77 @@ export async function generateDailyQuests(userId) {
     { type: 'physical', label: '💪 Physical Mission', baseXP: 20 },
   ];
 
-  const insertQuest = db.prepare(`
-    INSERT INTO quests (user_id, type, title, description, domain, topic, source, xp_reward, quest_date)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  const insertTopic = db.prepare(`
-    INSERT INTO topic_history (user_id, topic, domain) VALUES (?, ?, ?)
-  `);
-
   const generatedQuests = [];
+  const questInserts = [];
+  const topicInserts = [];
 
-  const insertTransaction = db.transaction(() => {
-    for (let i = 0; i < questDefs.length; i++) {
-      const def = questDefs[i];
-      const topic = topics[i % topics.length];
-      const xp = Math.floor(def.baseXP * levelMultiplier);
-      const description = mutateQuest(topic, def.type);
-      const meta = getQuestMeta(def.type, topic);
+  for (let i = 0; i < questDefs.length; i++) {
+    const def = questDefs[i];
+    const topic = topics[i % topics.length];
+    const xp = Math.floor(def.baseXP * levelMultiplier);
+    const description = mutateQuest(topic, def.type);
+    const meta = getQuestMeta(def.type, topic);
 
-      // Build rich details JSON
-      const details = JSON.stringify({
-        fullDescription: topic.fullDescription || topic.description,
-        steps: meta.steps,
-        difficulty: meta.difficulty,
-        timeEstimate: meta.timeEstimate,
-        whyItMatters: whyItMatters(topic),
-        sourceUrl: topic.url || '',
-        thumbnail: topic.thumbnail || '',
-        relatedDomains: [topic.domain],
-        tips: getTipsForType(def.type),
-      });
+    // Build rich details JSON
+    const details = JSON.stringify({
+      fullDescription: topic.fullDescription || topic.description,
+      steps: meta.steps,
+      difficulty: meta.difficulty,
+      timeEstimate: meta.timeEstimate,
+      whyItMatters: whyItMatters(topic),
+      sourceUrl: topic.url || '',
+      thumbnail: topic.thumbnail || '',
+      relatedDomains: [topic.domain],
+      tips: getTipsForType(def.type),
+    });
 
-      const result = insertQuest.run(
-        userId, def.type, `${def.label}: ${topic.title}`,
-        description + '\n\n' + details,
-        topic.domain, topic.title, topic.source, xp, today
-      );
+    const fullDescriptionText = description + '\n\n' + details;
 
-      insertTopic.run(userId, topic.title, topic.domain);
+    questInserts.push({
+      user_id: userId,
+      type: def.type,
+      title: `${def.label}: ${topic.title}`,
+      description: fullDescriptionText,
+      domain: topic.domain,
+      topic: topic.title,
+      source: topic.source,
+      xp_reward: xp,
+      quest_date: today
+    });
 
+    topicInserts.push({
+      user_id: userId,
+      topic: topic.title,
+      domain: topic.domain
+    });
+  }
+
+  // Batch insert quests and topics
+  const { data: insertedQuests } = await supabase
+    .from('quests')
+    .insert(questInserts)
+    .select();
+
+  await supabase
+    .from('topic_history')
+    .insert(topicInserts);
+
+  if (insertedQuests) {
+    for (const q of insertedQuests) {
+      // Split description back out for client
+      const splitInfo = q.description.split('\n\n{');
+      let detailsJson = {};
+      if (splitInfo.length > 1) {
+        detailsJson = JSON.parse('{' + splitInfo.slice(1).join('\n\n{'));
+      }
+      
       generatedQuests.push({
-        id: result.lastInsertRowid,
-        type: def.type,
-        title: `${def.label}: ${topic.title}`,
-        description,
-        domain: topic.domain,
-        topic: topic.title,
-        source: topic.source,
-        xp_reward: xp,
-        completed: 0,
-        quest_date: today,
-        details: JSON.parse(details),
+        ...q,
+        description: splitInfo[0],
+        details: detailsJson
       });
     }
-  });
-
-  insertTransaction();
+  }
 
   return generatedQuests;
 }
@@ -514,52 +535,76 @@ function getTipsForType(type) {
 }
 
 // Create or update skill based on completed quest
-export function updateSkill(userId, domain) {
-  const existing = db.prepare(
-    'SELECT * FROM skills WHERE user_id = ? AND name = ?'
-  ).get(userId, domain);
+export async function updateSkill(userId, domain) {
+  const { data: existing } = await supabase
+    .from('skills')
+    .select('id, xp, quest_count')
+    .eq('user_id', userId)
+    .eq('name', domain)
+    .maybeSingle();
 
   const color = DOMAIN_COLORS[Math.floor(Math.random() * DOMAIN_COLORS.length)];
 
   if (existing) {
-    db.prepare(
-      'UPDATE skills SET xp = xp + 10, quest_count = quest_count + 1 WHERE id = ?'
-    ).run(existing.id);
+    await supabase
+      .from('skills')
+      .update({ 
+        xp: existing.xp + 10, 
+        quest_count: existing.quest_count + 1 
+      })
+      .eq('id', existing.id);
   } else {
-    db.prepare(
-      'INSERT INTO skills (user_id, name, domain, xp, quest_count, color) VALUES (?, ?, ?, 10, 1, ?)'
-    ).run(userId, domain, domain, color);
+    await supabase
+      .from('skills')
+      .insert([{
+        user_id: userId,
+        name: domain,
+        domain: domain,
+        xp: 10,
+        quest_count: 1,
+        color: color
+      }]);
   }
 }
 
 // Check and grant quest-based achievements
-export function checkQuestAchievements(userId) {
-  const totalCompleted = db.prepare(
-    'SELECT COUNT(*) as count FROM quests WHERE user_id = ? AND completed = 1'
-  ).get(userId).count;
+export async function checkQuestAchievements(userId) {
+  const { count: totalCompleted } = await supabase
+    .from('quests')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('completed', 1);
 
-  const skillCount = db.prepare(
-    'SELECT COUNT(*) as count FROM skills WHERE user_id = ?'
-  ).get(userId).count;
+  const { count: skillCount } = await supabase
+    .from('skills')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId);
 
   const achievements = [
-    { condition: totalCompleted >= 1, name: 'First Web', desc: 'Completed your first quest', icon: '🕸️', cat: 'quest' },
-    { condition: totalCompleted >= 10, name: 'Quest Apprentice', desc: 'Completed 10 quests', icon: '📜', cat: 'quest' },
-    { condition: totalCompleted >= 50, name: 'Quest Master', desc: 'Completed 50 quests', icon: '🎓', cat: 'quest' },
-    { condition: totalCompleted >= 100, name: 'Quest Legend', desc: 'Completed 100 quests', icon: '👑', cat: 'quest' },
-    { condition: skillCount >= 3, name: 'Triple Threat', desc: 'Discovered 3 skill domains', icon: '🔱', cat: 'skill' },
-    { condition: skillCount >= 5, name: 'Polymath Rising', desc: 'Discovered 5 skill domains', icon: '🧠', cat: 'skill' },
-    { condition: skillCount >= 10, name: 'Renaissance Spider', desc: 'Discovered 10 skill domains', icon: '🎭', cat: 'skill' },
-    { condition: skillCount >= 20, name: 'Multiverse Mind', desc: 'Discovered 20 skill domains', icon: '🌌', cat: 'skill' },
+    { condition: (totalCompleted || 0) >= 1, name: 'First Web', desc: 'Completed your first quest', icon: '🕸️', cat: 'quest' },
+    { condition: (totalCompleted || 0) >= 10, name: 'Quest Apprentice', desc: 'Completed 10 quests', icon: '📜', cat: 'quest' },
+    { condition: (totalCompleted || 0) >= 50, name: 'Quest Master', desc: 'Completed 50 quests', icon: '🎓', cat: 'quest' },
+    { condition: (totalCompleted || 0) >= 100, name: 'Quest Legend', desc: 'Completed 100 quests', icon: '👑', cat: 'quest' },
+    { condition: (skillCount || 0) >= 3, name: 'Triple Threat', desc: 'Discovered 3 skill domains', icon: '🔱', cat: 'skill' },
+    { condition: (skillCount || 0) >= 5, name: 'Polymath Rising', desc: 'Discovered 5 skill domains', icon: '🧠', cat: 'skill' },
+    { condition: (skillCount || 0) >= 10, name: 'Renaissance Spider', desc: 'Discovered 10 skill domains', icon: '🎭', cat: 'skill' },
+    { condition: (skillCount || 0) >= 20, name: 'Multiverse Mind', desc: 'Discovered 20 skill domains', icon: '🌌', cat: 'skill' },
   ];
 
   for (const a of achievements) {
     if (a.condition) {
-      try {
-        db.prepare(
-          'INSERT OR IGNORE INTO achievements (user_id, name, description, icon, category) VALUES (?, ?, ?, ?, ?)'
-        ).run(userId, a.name, a.desc, a.icon, a.cat);
-      } catch (e) { /* ignore */ }
+      // Supabase UNIQUE constraint automatically ignores if it already exists
+      await supabase
+        .from('achievements')
+        .insert([{
+          user_id: userId,
+          name: a.name,
+          description: a.desc,
+          icon: a.icon,
+          category: a.cat
+        }])
+        .select()
+        .maybeSingle(); // Prevent throwing error on duplicate
     }
   }
 }

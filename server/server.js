@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { initDB } from './db/schema.js';
 import authRoutes from './routes/auth.js';
 import questRoutes from './routes/quests.js';
 import skillRoutes from './routes/skills.js';
@@ -33,8 +32,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// Initialize database
-initDB();
+// Database is initialized via Supabase client
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -63,5 +61,5 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
   console.log(`\n🕷️  Spider-Verse Quest Engine Backend`);
   console.log(`🌐  Server running on http://localhost:${PORT}`);
-  console.log(`📦  Database: SQLite (spiderverse.db)\n`);
+  console.log(`📦  Database: Supabase PostgreSQL (OTP Flow Active)\n`);
 });
