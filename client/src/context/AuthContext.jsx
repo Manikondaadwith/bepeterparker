@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../api/client';
+import { api, setToken, removeToken } from '../api/client';
 
 const AuthContext = createContext(null);
 
@@ -8,12 +8,13 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('spiderverse_token');
+    let token;
+    try { token = localStorage.getItem('spiderverse_token'); } catch { token = null; }
     if (token) {
       api.getMe()
         .then(data => setUser(data.user))
         .catch(() => {
-          localStorage.removeItem('spiderverse_token');
+          removeToken();
           setUser(null);
         })
         .finally(() => setLoading(false));
@@ -24,20 +25,20 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const data = await api.login({ email, password });
-    localStorage.setItem('spiderverse_token', data.token);
+    setToken(data.token);
     setUser(data.user);
     return data;
   };
 
   const signup = async (username, email, password) => {
     const data = await api.signup({ username, email, password });
-    localStorage.setItem('spiderverse_token', data.token);
+    setToken(data.token);
     setUser(data.user);
     return data;
   };
 
   const logout = () => {
-    localStorage.removeItem('spiderverse_token');
+    removeToken();
     setUser(null);
   };
 

@@ -1,7 +1,30 @@
-const API_BASE = '/api';
+// Use VITE_API_URL env var for deployed/mobile builds, fallback to '/api' for local dev
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
+// Helper to get auth token — uses localStorage for web, can be swapped for
+// SecureStorage in a Capacitor mobile build later.
+function getToken() {
+  try {
+    return localStorage.getItem('spiderverse_token');
+  } catch {
+    return null;
+  }
+}
+
+export function setToken(token) {
+  try {
+    localStorage.setItem('spiderverse_token', token);
+  } catch { /* noop – mobile fallback handled by app */ }
+}
+
+export function removeToken() {
+  try {
+    localStorage.removeItem('spiderverse_token');
+  } catch { /* noop */ }
+}
 
 async function request(endpoint, options = {}) {
-  const token = localStorage.getItem('spiderverse_token');
+  const token = getToken();
   const config = {
     headers: {
       'Content-Type': 'application/json',

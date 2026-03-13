@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'spiderverse-quest-engine-secret-key-2024';
+const JWT_SECRET = process.env.JWT_SECRET || 'spiderverse-quest-engine-secret-change-me';
 
 export function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
