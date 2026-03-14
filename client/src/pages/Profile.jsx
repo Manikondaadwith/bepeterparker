@@ -4,9 +4,19 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, logout, changePassword } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showChangeUsername, setShowChangeUsername] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [usernameSuccess, setUsernameSuccess] = useState('');
+  const [usernameLoading, setUsernameLoading] = useState(false);
+  const [passwordData, setPasswordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -21,6 +31,69 @@ export default function Profile() {
     }
     load();
   }, []);
+
+  const handleChangePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+    setPasswordLoading(true);
+
+    try {
+      if (!passwordData.oldPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+        throw new Error('All fields are required');
+      }
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        throw new Error('New passwords do not match');
+      }
+      if (passwordData.newPassword.length < 6) {
+        throw new Error('New password must be at least 6 characters');
+      }
+      if (passwordData.oldPassword === passwordData.newPassword) {
+        throw new Error('New password must be different from old password');
+      }
+
+      await changePassword(passwordData.oldPassword, passwordData.newPassword);
+      setPasswordSuccess('Password changed successfully!');
+      setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+      setTimeout(() => {
+        setShowChangePassword(false);
+        setPasswordSuccess('');
+      }, 2000);
+    } catch (err) {
+      setPasswordError(err.message || 'Failed to change password');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handleChangeUsernameSubmit = async (e) => {
+    e.preventDefault();
+    setUsernameError('');
+    setUsernameSuccess('');
+    setUsernameLoading(true);
+
+    try {
+      if (!newUsername || newUsername.length < 3) {
+        throw new Error('Username must be at least 3 characters');
+      }
+      if (newUsername === user.username) {
+        throw new Error('New username must be different from current username');
+      }
+
+      const result = await api.updateUsername(newUsername);
+      setUsernameSuccess('Username changed successfully!');
+      setNewUsername('');
+      setTimeout(() => {
+        setShowChangeUsername(false);
+        setUsernameSuccess('');
+        window.location.reload();
+      }, 2000);
+    } catch (err) {
+      setUsernameError(err.message || 'Failed to change username');
+    } finally {
+      setUsernameLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -207,6 +280,260 @@ export default function Profile() {
             <p className="text-[10px] sm:text-xs mt-2" style={{ color: 'var(--color-spider-gold)' }}>
               XP Modifier: {profile.activeEvent.xp_modifier}x
             </p>
+          </motion.div>
+        )}
+
+        {/* Change Username & Password & Logout Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ delay: 0.9 }}
+          className="flex gap-3 sm:gap-4 mt-5 sm:mt-8 flex-col sm:flex-row"
+        >
+          <button
+            onClick={() => setShowChangeUsername(true)}
+            className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all"
+            style={{ 
+              background: 'rgba(124,58,237,0.2)', 
+              color: '#A78BFA',
+              border: '1px solid rgba(124,58,237,0.3)',
+              cursor: 'pointer'
+            }}
+          >
+            👤 Change Username
+          </button>
+          <button
+            onClick={() => setShowChangePassword(true)}
+            className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all"
+            style={{ 
+              background: 'rgba(255,215,0,0.2)', 
+              color: 'var(--color-spider-gold)',
+              border: '1px solid rgba(255,215,0,0.3)',
+              cursor: 'pointer'
+            }}
+          >
+            🔐 Change Password
+          </button>
+          <button
+            onClick={logout}
+            className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all"
+            style={{ 
+              background: 'rgba(220,20,60,0.2)', 
+              color: 'var(--color-spider-red-light)',
+              border: '1px solid rgba(220,20,60,0.3)',
+              cursor: 'pointer'
+            }}
+          >
+            🚪 Logout
+          </button>
+        </motion.div>
+
+        {/* Change Password Modal */}
+        {showChangePassword && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowChangePassword(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="glass-card p-6 sm:p-8 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-2xl font-bold mb-4">🔐 Change Password</h2>
+
+              {passwordError && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="mb-4 p-3 rounded-lg text-sm text-red-300"
+                  style={{ background: 'rgba(220,20,60,0.15)', border: '1px solid rgba(220,20,60,0.3)' }}
+                >
+                  {passwordError}
+                </motion.div>
+              )}
+
+              {passwordSuccess && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="mb-4 p-3 rounded-lg text-sm text-green-300"
+                  style={{ background: 'rgba(46, 204, 113, 0.15)', border: '1px solid rgba(46, 204, 113, 0.3)' }}
+                >
+                  {passwordSuccess}
+                </motion.div>
+              )}
+
+              <form onSubmit={handleChangePasswordSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-verse-muted)' }}>
+                    Current Password
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordData.oldPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, oldPassword: e.target.value }))}
+                    className="spider-input"
+                    placeholder="Enter current password"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-verse-muted)' }}>
+                    New Password
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                    className="spider-input"
+                    placeholder="Enter new password (min 6 characters)"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-verse-muted)' }}>
+                    Confirm Password
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    className="spider-input"
+                    placeholder="Confirm new password"
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowChangePassword(false);
+                      setPasswordError('');
+                      setPasswordSuccess('');
+                      setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+                    }}
+                    className="flex-1 px-4 py-2 rounded-lg font-semibold transition-all"
+                    style={{ background: 'var(--color-verse-surface)', color: 'var(--color-verse-muted)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={passwordLoading}
+                    className="flex-1 px-4 py-2 rounded-lg font-semibold transition-all hover:scale-105 disabled:opacity-50"
+                    style={{
+                      background: 'linear-gradient(135deg, var(--color-spider-red), var(--color-spider-red-light))',
+                      color: 'white',
+                    }}
+                  >
+                    {passwordLoading ? 'Updating...' : 'Update Password'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Change Username Modal */}
+        {showChangeUsername && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowChangeUsername(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="glass-card p-6 sm:p-8 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-2xl font-bold mb-4">👤 Change Username</h2>
+
+              {usernameError && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="mb-4 p-3 rounded-lg text-sm text-red-300"
+                  style={{ background: 'rgba(220,20,60,0.15)', border: '1px solid rgba(220,20,60,0.3)' }}
+                >
+                  {usernameError}
+                </motion.div>
+              )}
+
+              {usernameSuccess && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="mb-4 p-3 rounded-lg text-sm text-green-300"
+                  style={{ background: 'rgba(46, 204, 113, 0.15)', border: '1px solid rgba(46, 204, 113, 0.3)' }}
+                >
+                  {usernameSuccess}
+                </motion.div>
+              )}
+
+              <form onSubmit={handleChangeUsernameSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-verse-muted)' }}>
+                    Current Username
+                  </label>
+                  <input
+                    type="text"
+                    value={user.username}
+                    disabled
+                    className="spider-input opacity-50 cursor-not-allowed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-verse-muted)' }}>
+                    New Username
+                  </label>
+                  <input
+                    type="text"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
+                    className="spider-input"
+                    placeholder="Enter new username (min 3 characters)"
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowChangeUsername(false);
+                      setNewUsername('');
+                      setUsernameError('');
+                    }}
+                    className="flex-1 px-4 py-2 rounded-lg font-semibold transition-all"
+                    style={{ background: 'var(--color-verse-surface)', color: 'var(--color-verse-muted)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={usernameLoading}
+                    className="flex-1 px-4 py-2 rounded-lg font-semibold transition-all hover:scale-105 disabled:opacity-50"
+                    style={{
+                      background: 'linear-gradient(135deg, var(--color-spider-purple), #A78BFA)',
+                      color: 'white',
+                    }}
+                  >
+                    {usernameLoading ? 'Updating...' : 'Update Username'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
           </motion.div>
         )}
       </div>

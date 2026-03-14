@@ -1,16 +1,22 @@
+import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 
 // Get Supabase credentials from environment
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  console.warn('⚠️ WARNING: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing from environment.');
-  console.warn('⚠️ Make sure to configure your .env file or server environment variables.');
+const missingEnv = [];
+if (!supabaseUrl) missingEnv.push('SUPABASE_URL');
+if (!supabaseKey) missingEnv.push('SUPABASE_SERVICE_ROLE_KEY');
+
+if (missingEnv.length > 0) {
+  throw new Error(
+    `[supabase] Missing required environment variables: ${missingEnv.join(', ')}.`
+  );
 }
 
 // Ensure the client uses the service role key since the backend is authoritative
-export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder', {
+export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     persistSession: false,
     autoRefreshToken: false,

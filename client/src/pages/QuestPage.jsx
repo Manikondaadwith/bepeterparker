@@ -19,7 +19,11 @@ function parseDetails(quest) {
     try { details = JSON.parse(parts[i]); break; } catch(e) { /* not JSON */ }
   }
   if (!details && quest.details) {
-    details = typeof quest.details === 'string' ? JSON.parse(quest.details) : quest.details;
+    try {
+      details = typeof quest.details === 'string' ? JSON.parse(quest.details) : quest.details;
+    } catch {
+      details = null;
+    }
   }
   return { mainDesc, details };
 }

@@ -23,15 +23,30 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const requestOtp = async (email) => {
-    return await api.requestOtp(email);
+  const signupRequest = async (email, password, username) => {
+    return await api.signupRequest(email, password, username);
   };
 
-  const verifyOtp = async (email, otp) => {
-    const data = await api.verifyOtp(email, otp);
+  const signupVerify = async (email, otp) => {
+    const data = await api.signupVerify(email, otp);
     setToken(data.token);
     setUser(data.user);
     return data;
+  };
+
+  const login = async (email, password) => {
+    const data = await api.login(email, password);
+    setToken(data.token);
+    setUser(data.user);
+    return data;
+  };
+
+  const forgotPasswordRequest = async (email) => {
+    return await api.forgotPasswordRequest(email);
+  };
+
+  const forgotPasswordReset = async (email, otp, newPassword) => {
+    return await api.forgotPasswordReset(email, otp, newPassword);
   };
 
   const logout = () => {
@@ -39,12 +54,21 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const changePassword = async (oldPassword, newPassword) => {
+    return await api.changePassword(oldPassword, newPassword);
+  };
+
   const updateUser = (updates) => {
     setUser(prev => ({ ...prev, ...updates }));
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, requestOtp, verifyOtp, logout, updateUser }}>
+    <AuthContext.Provider value={{ 
+      user, loading, 
+      signupRequest, signupVerify, login, 
+      forgotPasswordRequest, forgotPasswordReset, changePassword,
+      logout, updateUser 
+    }}>
       {children}
     </AuthContext.Provider>
   );

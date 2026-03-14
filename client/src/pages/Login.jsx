@@ -1,40 +1,25 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
-  const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { requestOtp, verifyOtp } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleRequestOtp = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await requestOtp(email);
-      setStep(2);
-    } catch (err) {
-      setError(err.message || 'Failed to request OTP');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      await verifyOtp(email, otp);
+      await login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Invalid OTP');
+      setError(err.message || 'Invalid credentials');
     } finally {
       setLoading(false);
     }
@@ -50,7 +35,6 @@ export default function Login() {
         className="relative z-10 w-full max-w-md px-4 sm:px-0"
       >
         <div className="glass-card p-6 sm:p-8">
-          {/* Logo */}
           <div className="text-center mb-6 sm:mb-8">
             <motion.div
               animate={{ rotate: [0, -5, 5, 0] }}
@@ -67,7 +51,7 @@ export default function Login() {
               Spider-Verse Quest
             </h1>
             <p style={{ color: 'var(--color-verse-muted)' }} className="text-sm">
-              {step === 1 ? 'Enter the multiverse of knowledge' : 'Check your inbox for the key'}
+              Enter the multiverse of knowledge
             </p>
           </div>
 
@@ -82,70 +66,56 @@ export default function Login() {
             </motion.div>
           )}
 
-          {step === 1 ? (
-            <form onSubmit={handleRequestOtp} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-verse-muted)' }}>Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="spider-input"
-                  placeholder="peter@dailybugle.com"
-                  required
-                />
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-verse-muted)' }}>Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="spider-input"
+                placeholder="peter@dailybugle.com"
+                required
+              />
+            </div>
+            <div>
+              <div className="flex justify-between mb-2">
+                <label className="block text-sm font-medium" style={{ color: 'var(--color-verse-muted)' }}>Password</label>
+                <Link to="/forgot-password" className="text-sm hover:underline" style={{ color: 'var(--color-spider-red-light)' }}>
+                  Forgot?
+                </Link>
               </div>
-              <button
-                type="submit"
-                disabled={loading || !email}
-                className="spider-btn w-full text-center mt-6"
-                style={{ opacity: loading ? 0.7 : 1 }}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>🕸️</motion.span>
-                    Sending Web...
-                  </span>
-                ) : 'Send Access Code'}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-verse-muted)' }}>Security Code (OTP)</label>
-                <input
-                  type="text"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  className="spider-input text-center text-2xl tracking-widest"
-                  placeholder="000000"
-                  maxLength={6}
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading || otp.length < 6}
-                className="spider-btn w-full text-center mt-6"
-                style={{ opacity: loading ? 0.7 : 1 }}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>🕸️</motion.span>
-                    Verifying...
-                  </span>
-                ) : 'Enter the Spider-Verse'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="w-full text-center text-sm font-medium hover:underline mt-4 tracking-wider"
-                style={{ color: 'var(--color-verse-muted)' }}
-              >
-                &larr; Back to Email
-              </button>
-            </form>
-          )}
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="spider-input"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            
+            <button
+              type="submit"
+              disabled={loading || !email || !password}
+              className="spider-btn w-full text-center mt-6"
+              style={{ opacity: loading ? 0.7 : 1 }}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>🕸️</motion.span>
+                  Logging in...
+                </span>
+              ) : 'Enter the Spider-Verse'}
+            </button>
+
+            <div className="text-center mt-6 pt-4 border-t border-gray-800">
+              <span className="text-sm" style={{ color: 'var(--color-verse-muted)' }}>Need an account? </span>
+              <Link to="/signup" className="text-sm font-medium hover:underline" style={{ color: 'var(--color-spider-red-light)' }}>
+                Sign Up
+              </Link>
+            </div>
+          </form>
         </div>
       </motion.div>
     </div>

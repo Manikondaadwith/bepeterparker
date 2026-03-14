@@ -12,9 +12,157 @@ const QUEST_STYLES = {
   physical: { icon: '💪', color: '#10B981', label: 'Physical', bg: 'rgba(16,185,129,0.1)' },
 };
 
+function parseDetails(quest) {
+  const parts = (quest.description || '').split('\n\n');
+  const mainDesc = parts[0] || quest.description;
+  let details = null;
+  for (let i = 1; i < parts.length; i++) {
+    try { details = JSON.parse(parts[i]); break; } catch(e) { /* not JSON */ }
+  }
+  if (!details && quest.details) {
+    try {
+      details = typeof quest.details === 'string' ? JSON.parse(quest.details) : quest.details;
+    } catch {
+      details = null;
+    }
+  }
+  return { mainDesc, details };
+}
+
+function QuestDetailModal({ quest, onClose, onComplete, completing }) {
+  const style = QUEST_STYLES[quest.type] || QUEST_STYLES.side;
+  const { mainDesc, details } = parseDetails(quest);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end sm:items-start justify-center overflow-y-auto sm:py-8 px-0 sm:px-4"
+      style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)' }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, y: 60, opacity: 0 }}
+        animate={{ scale: 1, y: 0, opacity: 1 }}
+        exit={{ scale: 0.95, y: 60, opacity: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="w-full sm:max-w-2xl sm:my-4"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="glass-card overflow-hidden sm:rounded-2xl"
+          style={{ border: `1px solid ${style.color}40` }}>
+          
+          <div className="sm:hidden flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 rounded-full" style={{ background: 'var(--color-verse-border)' }} />
+          </div>
+
+          <div className="relative p-4 sm:p-6 pb-3 sm:pb-4"
+            style={{ background: `linear-gradient(135deg, ${style.color}20, ${style.color}05)` }}>
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                <span className="text-2xl sm:text-3xl">{style.icon}</span>
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] sm:text-xs font-bold tracking-widest block" style={{ color: style.color }}>
+                    {style.label}
+                  </span>
+                  <span className="text-[10px] sm:text-xs" style={{ color: 'var(--color-verse-muted)' }}>
+                    via {quest.source}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                  <span className="text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full"
+                    style={{ background: 'rgba(255,215,0,0.15)', color: 'var(--color-spider-gold)' }}>
+                    +{quest.xp_reward} XP
+                  </span>
+                </div>
+              </div>
+              <h2 className="text-lg sm:text-2xl font-extrabold leading-tight">
+                {quest.title.replace(/^[^\:]+:\s*/, '')}
+              </h2>
+            </div>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 max-h-96 overflow-y-auto">
+            <div>
+              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider mb-1.5 sm:mb-2" style={{ color: style.color }}>
+                🎯 Mission Brief
+              </h3>
+              <p className="text-xs sm:text-sm leading-relaxed" style={{ color: 'var(--color-verse-text)' }}>
+                {mainDesc}
+              </p>
+            </div>
+
+            {details?.steps && details.steps.length > 0 && (
+              <div>
+                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider mb-2 sm:mb-3" style={{ color: style.color }}>
+                  📋 Quest Steps
+                </h3>
+                <div className="space-y-2">
+                  {details.steps.map((step, i) => (
+                    <div key={i} className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg"
+                      style={{ background: 'var(--color-verse-surface)' }}>
+                      <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold shrink-0 mt-0.5"
+                        style={{ background: `${style.color}30`, color: style.color }}>
+                        {i + 1}
+                      </span>
+                      <span className="text-xs sm:text-sm" style={{ color: 'var(--color-verse-text)' }}>{step}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {details?.fullDescription && (
+              <div className="p-3 sm:p-4 rounded-xl" style={{ background: 'var(--color-verse-surface)', border: '1px solid var(--color-verse-border)' }}>
+                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider mb-1.5 sm:mb-2" style={{ color: 'var(--color-verse-muted)' }}>
+                  📖 About This Topic
+                </h3>
+                <p className="text-xs sm:text-sm leading-relaxed" style={{ color: 'var(--color-verse-text)' }}>
+                  {details.fullDescription.substring(0, 500)}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 p-4 sm:p-6 pt-3 sm:pt-4 border-t" style={{ borderColor: 'var(--color-verse-border)' }}>
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg font-semibold transition-all"
+              style={{ background: 'var(--color-verse-surface)', color: 'var(--color-verse-muted)' }}>
+              Close
+            </button>
+            {!quest.completed && (
+              <button
+                onClick={() => onComplete(quest.id)}
+                disabled={completing === quest.id}
+                className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg font-semibold transition-all hover:scale-105 disabled:opacity-50"
+                style={{
+                  background: `linear-gradient(135deg, ${style.color}, ${style.color}cc)`,
+                  color: 'white',
+                }}>
+                {completing === quest.id ? 'Completing...' : '✅ Complete Mission'}
+              </button>
+            )}
+            {quest.completed && (
+              <button
+                disabled
+                className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg font-semibold"
+                style={{ background: 'rgba(16,185,129,0.2)', color: '#34D399' }}>
+                ✅ Completed
+              </button>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function Dashboard() {
   const { user, updateUser } = useAuth();
   const [quests, setQuests] = useState([]);
+  const [selectedQuest, setSelectedQuest] = useState(null);
   const [profile, setProfile] = useState(null);
   const [randomEvent, setRandomEvent] = useState(null);
   const [completing, setCompleting] = useState(null);
@@ -199,8 +347,9 @@ export default function Dashboard() {
                   initial={{ opacity: 0, x: -30 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 * i }}
-                  className={`glass-card p-4 sm:p-5 quest-${quest.type}`}
+                  className={`glass-card p-4 sm:p-5 quest-${quest.type} cursor-pointer hover:opacity-80 transition-opacity`}
                   style={{ opacity: quest.completed ? 0.6 : 1 }}
+                  onClick={() => setSelectedQuest(quest)}
                 >
                   {/* Mobile: stack vertically. Desktop: side by side */}
                   <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
@@ -242,7 +391,10 @@ export default function Dashboard() {
                       ) : (
                         <motion.button
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => handleComplete(quest.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleComplete(quest.id);
+                          }}
                           disabled={completing === quest.id}
                           className="spider-btn text-xs sm:text-sm px-4 py-2.5 sm:px-4 sm:py-3 rounded-xl"
                         >
@@ -299,6 +451,18 @@ export default function Dashboard() {
           </Link>
         </div>
       </div>
+
+      {/* Quest Detail Modal */}
+      <AnimatePresence>
+        {selectedQuest && (
+          <QuestDetailModal 
+            quest={selectedQuest} 
+            onClose={() => setSelectedQuest(null)}
+            onComplete={handleComplete}
+            completing={completing}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

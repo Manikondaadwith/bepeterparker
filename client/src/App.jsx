@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { lazy, Suspense } from 'react';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import Navbar from './components/Navbar';
 import './index.css';
@@ -40,6 +42,8 @@ function AppRoutes() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
+          <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup />} />
+          <Route path="/forgot-password" element={user ? <Navigate to="/dashboard" /> : <ForgotPassword />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/quests" element={<ProtectedRoute><QuestPage /></ProtectedRoute>} />
           <Route path="/skills" element={<ProtectedRoute><SkillMap /></ProtectedRoute>} />

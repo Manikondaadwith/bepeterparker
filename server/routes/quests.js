@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import db from '../db/schema.js';
+import { supabase } from '../db/supabase.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { generateDailyQuests, updateSkill, checkQuestAchievements } from '../services/questGenerator.js';
 import { awardXP, getXpProgress, maybeGenerateRandomEvent } from '../services/xpSystem.js';
@@ -10,12 +10,17 @@ const router = Router();
 router.get('/daily', authMiddleware, async (req, res) => {
   try {
     const quests = await generateDailyQuests(req.userId);
-    const randomEvent = maybeGenerateRandomEvent(req.userId);
+    const randomEvent = await maybeGenerateRandomEvent(req.userId);
 
     // Get active event
-    const activeEvent = db.prepare(
-      'SELECT * FROM random_events WHERE user_id = ? AND active = 1 ORDER BY created_at DESC LIMIT 1'
-    ).get(req.userId);
+    const { data: activeEvent } = await supabase
+      .from('random_events')
+      .select('*')
+      .eq('user_id', req.userId)
+      .eq('active', 1)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     res.json({ quests, randomEvent: activeEvent || randomEvent });
   } catch (err) {
@@ -25,43 +30,62 @@ router.get('/daily', authMiddleware, async (req, res) => {
 });
 
 // POST /api/quests/:id/complete - Complete a quest
-router.post('/:id/complete', authMiddleware, (req, res) => {
+router.post('/:id/complete', authMiddleware, async (req, res) => {
   try {
-    const quest = db.prepare('SELECT * FROM quests WHERE id = ? AND user_id = ?').get(req.params.id, req.userId);
+    const { data: quest } = await supabase
+      .from('quests')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('user_id', req.userId)
+      .single();
+
     if (!quest) return res.status(404).json({ error: 'Quest not found' });
     if (quest.completed) return res.status(400).json({ error: 'Quest already completed' });
 
     // Mark complete
-    db.prepare('UPDATE quests SET completed = 1, completed_at = datetime(\'now\') WHERE id = ?').run(quest.id);
+    await supabase
+      .from('quests')
+      .update({ completed: 1, completed_at: new Date().toISOString() })
+      .eq('id', quest.id);
 
     // Award XP
-    const xpResult = awardXP(req.userId, quest.xp_reward);
+    const xpResult = await awardXP(req.userId, quest.xp_reward);
 
     // Update skill nodes
-    updateSkill(req.userId, quest.domain);
+    await updateSkill(req.userId, quest.domain);
 
     // Check achievements
-    checkQuestAchievements(req.userId);
+    await checkQuestAchievements(req.userId);
 
     // Get updated user
-    const user = db.prepare('SELECT id, username, email, xp, level, streak FROM users WHERE id = ?').get(req.userId);
+    const { data: user } = await supabase
+      .from('users')
+      .select('id, username, email, xp, level, streak')
+      .eq('id', req.userId)
+      .single();
+
     const xpProgress = getXpProgress(user);
 
     // Check if all daily quests are done (boss battle opportunity)
     const today = new Date().toISOString().split('T')[0];
-    const todayQuests = db.prepare('SELECT * FROM quests WHERE user_id = ? AND quest_date = ?').all(req.userId, today);
-    const allDone = todayQuests.every(q => q.completed);
+    const { data: todayQuests } = await supabase
+      .from('quests')
+      .select('completed')
+      .eq('user_id', req.userId)
+      .eq('quest_date', today);
+
+    const allDone = todayQuests && todayQuests.every(q => q.completed);
 
     let bossBonus = null;
     if (allDone) {
-      const bonusXP = awardXP(req.userId, 50);
+      const bonusXP = await awardXP(req.userId, 50);
       bossBonus = { message: '🕷️ BOSS BATTLE WON! All daily quests completed!', xp: bonusXP.xpGained };
 
-      try {
-        db.prepare(
-          'INSERT OR IGNORE INTO achievements (user_id, name, description, icon, category) VALUES (?, ?, ?, ?, ?)'
-        ).run(req.userId, 'Daily Dominator', 'Completed all quests in a single day', '⚡', 'daily');
-      } catch (e) { /* ignore */ }
+      await supabase
+        .from('achievements')
+        .insert([{ user_id: req.userId, name: 'Daily Dominator', description: 'Completed all quests in a single day', icon: '⚡', category: 'daily' }])
+        .select()
+        .maybeSingle(); // Ignore if exists
     }
 
     res.json({
@@ -79,11 +103,20 @@ router.post('/:id/complete', authMiddleware, (req, res) => {
 });
 
 // GET /api/quests/history - Quest history
-router.get('/history', authMiddleware, (req, res) => {
-  const quests = db.prepare(
-    'SELECT * FROM quests WHERE user_id = ? ORDER BY created_at DESC LIMIT 50'
-  ).all(req.userId);
-  res.json({ quests });
+router.get('/history', authMiddleware, async (req, res) => {
+  try {
+    const { data: quests } = await supabase
+      .from('quests')
+      .select('*')
+      .eq('user_id', req.userId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+      
+    res.json({ quests: quests || [] });
+  } catch (err) {
+    console.error('History fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch history' });
+  }
 });
 
 export default router;

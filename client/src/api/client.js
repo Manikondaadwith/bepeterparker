@@ -35,10 +35,19 @@ async function request(endpoint, options = {}) {
   };
 
   const res = await fetch(`${API_BASE}${endpoint}`, config);
-  const data = await res.json();
+  const rawBody = await res.text();
+  let data = {};
+
+  if (rawBody) {
+    try {
+      data = JSON.parse(rawBody);
+    } catch {
+      data = { error: rawBody };
+    }
+  }
 
   if (!res.ok) {
-    throw new Error(data.error || 'Request failed');
+    throw new Error(data.error || `Request failed (${res.status})`);
   }
 
   return data;
@@ -46,8 +55,12 @@ async function request(endpoint, options = {}) {
 
 export const api = {
   // Auth
-  requestOtp: (email) => request('/auth/request-otp', { method: 'POST', body: JSON.stringify({ email }) }),
-  verifyOtp: (email, otp) => request('/auth/verify-otp', { method: 'POST', body: JSON.stringify({ email, otp }) }),
+  signupRequest: (email, password, username) => request('/auth/signup-request', { method: 'POST', body: JSON.stringify({ email, password, username }) }),
+  signupVerify: (email, otp) => request('/auth/signup-verify', { method: 'POST', body: JSON.stringify({ email, otp }) }),
+  login: (email, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  forgotPasswordRequest: (email) => request('/auth/forgot-password-request', { method: 'POST', body: JSON.stringify({ email }) }),
+  forgotPasswordReset: (email, otp, newPassword) => request('/auth/forgot-password-reset', { method: 'POST', body: JSON.stringify({ email, otp, newPassword }) }),
+  changePassword: (oldPassword, newPassword) => request('/auth/change-password', { method: 'POST', body: JSON.stringify({ oldPassword, newPassword }) }),
   updateUsername: (username) => request('/auth/username', { method: 'PUT', body: JSON.stringify({ username }) }),
   getMe: () => request('/auth/me'),
 

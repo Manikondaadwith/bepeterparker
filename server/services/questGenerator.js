@@ -30,7 +30,7 @@ function extractDomain(topic, source) {
     'economic': 'Economics', 'language': 'Linguistics', 'art': 'Visual Arts',
     'ocean': 'Oceanography', 'space': 'Space Science', 'code': 'Programming',
     'machine learning': 'AI & ML', 'crypto': 'Cryptography', 'planet': 'Planetary Science',
-    'brain': 'Neuroscience', 'DNA': 'Genetics', 'star': 'Astronomy',
+    'brain': 'Neuroscience', 'dna': 'Genetics', 'star': 'Astronomy',
     'fossil': 'Paleontology', 'volcano': 'Geology', 'atom': 'Physics',
     'cell': 'Cell Biology', 'protein': 'Biochemistry', 'light': 'Optics',
     'sound': 'Acoustics', 'electric': 'Electrical Engineering', 'design': 'Design',
@@ -493,7 +493,11 @@ export async function generateDailyQuests(userId) {
       const splitInfo = q.description.split('\n\n{');
       let detailsJson = {};
       if (splitInfo.length > 1) {
-        detailsJson = JSON.parse('{' + splitInfo.slice(1).join('\n\n{'));
+        try {
+          detailsJson = JSON.parse('{' + splitInfo.slice(1).join('\n\n{'));
+        } catch {
+          detailsJson = {};
+        }
       }
       
       generatedQuests.push({
