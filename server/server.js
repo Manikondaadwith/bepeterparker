@@ -73,17 +73,19 @@ app.get('/api/health', (req, res) => {
 });
 
 // ---------- Production: serve React build ----------
-// When deployed, the built client files live at ../client/dist
-const clientDistPath = path.join(__dirname, '..', 'client', 'dist');
-app.use(express.static(clientDistPath));
+// On localhost/VPS, Express serves both. On Vercel, the edge network handles it.
+if (!process.env.VERCEL) {
+  const clientDistPath = path.join(__dirname, '..', 'client', 'dist');
+  app.use(express.static(clientDistPath));
 
-// SPA fallback — any non-API route serves index.html so React Router works
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api')) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  res.sendFile(path.join(clientDistPath, 'index.html'));
-});
+  // SPA fallback — any non-API route serves index.html so React Router works
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api')) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
 
 // Global Error Handler to prevent HTML stack traces on API errors
 app.use((err, req, res, next) => {
@@ -91,8 +93,13 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || "Internal Server Error" });
 });
 
-app.listen(PORT, () => {
-  console.log(`\n🕷️  Spider-Verse Quest Engine Backend`);
-  console.log(`🌐  Server running on http://localhost:${PORT}`);
-  console.log(`📦  Database: Supabase PostgreSQL (OTP Flow Active)\n`);
-});
+// Only listen if not on Vercel or in development
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n🕷️  Spider-Verse Quest Engine Backend`);
+    console.log(`🌐  Server running on http://localhost:${PORT}`);
+    console.log(`📦  Database: Supabase PostgreSQL (OTP Flow Active)\n`);
+  });
+}
+
+export default app;
