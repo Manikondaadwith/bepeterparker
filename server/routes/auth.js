@@ -285,7 +285,8 @@ router.post('/login', async (req, res) => {
     console.error('[auth] CRITICAL login error:', err.message);
     res.status(500).json({ 
       error: 'Internal server error during login',
-      details: process.env.NODE_ENV === 'development' ? err.message : undefined 
+      message: err.message, // Expose for debugging
+      details: err.stack 
     });
   }
 });

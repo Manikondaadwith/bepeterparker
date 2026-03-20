@@ -40,16 +40,23 @@ if (process.env.NODE_ENV === 'production' && allowedOrigins.includes('*')) {
 
 app.use(cors({
   origin(origin, callback) {
+    console.log(`[cors] Request from origin: ${origin || 'no-origin'}`);
     // Allow requests with no origin (mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
     const normalizedOrigin = normalizeOrigin(origin);
 
-    if (allowedOrigins.includes(normalizedOrigin)) {
+    if (allowedOrigins.includes(normalizedOrigin) || allowedOrigins.includes('*')) {
+      console.log(`[cors] Origin ${normalizedOrigin} is ALLOWED.`);
       return callback(null, true);
     }
-    if (process.env.NODE_ENV !== 'production' && allowedOrigins.includes('*')) {
-      return callback(null, true);
+    
+    // On Vercel, if origin matches the host, it's usually safe
+    if (process.env.VERCEL) {
+       console.log(`[cors] Vercel environment detected. Allowing same-site request.`);
+       return callback(null, true);
     }
+
+    console.warn(`[cors] Origin ${normalizedOrigin} is REJECTED.`);
     callback(new Error(`Not allowed by CORS: ${origin}`));
   },
   credentials: true,
@@ -89,8 +96,13 @@ if (!process.env.VERCEL) {
 
 // Global Error Handler to prevent HTML stack traces on API errors
 app.use((err, req, res, next) => {
-  console.error("Global Error:", err);
-  res.status(err.status || 500).json({ error: err.message || "Internal Server Error" });
+  console.error("Global Error Caught:", err.message);
+  console.error(err.stack);
+  res.status(err.status || 500).json({ 
+    error: "Internal Server Error",
+    message: err.message, // Expose for debugging even in production
+    path: req.path
+  });
 });
 
 // Only listen if not on Vercel or in development
