@@ -1,18 +1,14 @@
-// Dynamic import bridge for Vercel
-// This ensures compatibility between ESM and CommonJS in Vercel's environment.
+import app from '../server/server.js';
+
 export default async function handler(req, res) {
   try {
-    // Dynamically import the Express app
-    const { default: app } = await import('../server/server.js');
-    
-    // Hand off the request to Express
     return app(req, res);
   } catch (err) {
-    console.error('Vercel Bridge Error:', err);
+    console.error('Vercel Runtime Error:', err);
     res.status(500).json({
-      error: 'Vercel Function Invocation Failed',
+      error: 'Vercel Runtime Error',
       message: err.message,
-      hint: 'This is usually an ESM/CommonJS mismatch or missing dependencies.'
+      hint: 'Check Vercel logs for the full stack trace.'
     });
   }
 }
