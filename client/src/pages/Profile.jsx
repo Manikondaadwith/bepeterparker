@@ -116,7 +116,7 @@ export default function Profile() {
       setNotificationStatus('granted');
     } catch (err) {
       console.error('Failed to enable notifications:', err);
-      alert('Failed to enable notifications. Make sure you are using a secure connection (HTTPS or localhost).');
+      alert(`Failed to enable notifications: ${err.message || 'Unknown error'}`);
     } finally {
       setNotificationLoading(false);
     }
