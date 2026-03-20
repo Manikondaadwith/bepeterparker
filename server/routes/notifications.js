@@ -1,19 +1,21 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
-import { supabase } from '../db/supabase.js';
+import { getSupabaseClient } from '../db/supabase.js';
 import { sendPushNotification } from '../services/notificationService.js';
 
 const router = express.Router();
 
 // Subscribe to push notifications
 router.post('/subscribe', authenticateToken, async (req, res) => {
+  console.log(`[notifications] New subscription request for user ${req.user?.id}...`);
+  const db = getSupabaseClient();
   const { subscription } = req.body;
   if (!subscription || !subscription.endpoint || !subscription.keys) {
     return res.status(400).json({ error: 'Invalid subscription object' });
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('push_subscriptions')
       .upsert({
         user_id: req.user.id,
@@ -34,8 +36,10 @@ router.post('/subscribe', authenticateToken, async (req, res) => {
 
 // Send a test notification to the current user
 router.post('/test', authenticateToken, async (req, res) => {
+  console.log(`[notifications] Sending test notification to user ${req.user?.id}...`);
   try {
-    const { data: subscriptions, error } = await supabase
+    const db = getSupabaseClient();
+    const { data: subscriptions, error } = await db
       .from('push_subscriptions')
       .select('*')
       .eq('user_id', req.user.id);

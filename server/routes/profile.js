@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { supabase } from '../db/supabase.js';
+import { getSupabaseClient } from '../db/supabase.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { getXpProgress } from '../services/xpSystem.js';
 
@@ -7,8 +7,10 @@ const router = Router();
 
 // GET /api/profile - Full profile stats
 router.get('/', authMiddleware, async (req, res) => {
+  console.log(`[profile] Fetching profile for user ${req.userId}...`);
   try {
-    const { data: user, error: userError } = await supabase
+    const db = getSupabaseClient();
+    const { data: user, error: userError } = await db
       .from('users')
       .select('id, username, email, xp, level, streak, longest_streak, created_at')
       .eq('id', req.userId)
@@ -20,31 +22,31 @@ router.get('/', authMiddleware, async (req, res) => {
 
     const xpProgress = getXpProgress(user);
 
-    const { count: totalQuests } = await supabase
+    const { count: totalQuests } = await db
       .from('quests')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', req.userId)
       .eq('completed', 1);
 
-    const { count: totalSkills } = await supabase
+    const { count: totalSkills } = await db
       .from('skills')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', req.userId);
 
-    const { data: achievements } = await supabase
+    const { data: achievements } = await db
       .from('achievements')
       .select('*')
       .eq('user_id', req.userId)
       .order('unlocked_at', { ascending: false });
 
-    const { data: topSkills } = await supabase
+    const { data: topSkills } = await db
       .from('skills')
       .select('name, xp, quest_count, color')
       .eq('user_id', req.userId)
       .order('xp', { ascending: false })
       .limit(5);
 
-    const { data: activeEvent } = await supabase
+    const { data: activeEvent } = await db
       .from('random_events')
       .select('*')
       .eq('user_id', req.userId)

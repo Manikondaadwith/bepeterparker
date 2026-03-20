@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { supabase } from '../db/supabase.js';
+import { getSupabaseClient } from '../db/supabase.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { generateDailyQuests, updateSkill, checkQuestAchievements } from '../services/questGenerator.js';
 import { generateLLMQuests, generateChaosQuest, generateBossBattle } from '../services/llmQuestGenerator.js';
@@ -41,11 +41,18 @@ async function storeLLMQuests(userId, llmQuests) {
     };
   });
 
+  const db = getSupabaseClient();
+  console.log(`[quests] Storing ${llmQuests.length} new quests for user ${userId}...`);
+
   // Insert quests
-  const { data: insertedQuests } = await supabase
+  const { data: insertedQuests, error: insertError } = await db
     .from('quests')
     .insert(questInserts)
     .select();
+
+  if (insertError) {
+    console.error('[quests] Failed to insert quests:', insertError.message);
+  }
 
   // Track topics for anti-repetition
   const topicInserts = llmQuests.map(q => ({
@@ -54,7 +61,10 @@ async function storeLLMQuests(userId, llmQuests) {
     domain: q.domain,
   }));
 
-  await supabase.from('topic_history').insert(topicInserts);
+  const { error: topicError } = await db.from('topic_history').insert(topicInserts);
+  if (topicError) {
+    console.warn('[quests] Failed to track topics:', topicError.message);
+  }
 
   // Parse inserted quests for client format
   if (insertedQuests) {
@@ -90,12 +100,19 @@ router.get('/daily', authMiddleware, async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
     
+    console.log(`[quests] Serving daily quests for user ${req.userId}...`);
+    const db = getSupabaseClient();
+    
     // Check if quests already exist for today
-    const { data: existing } = await supabase
+    const { data: existing, error: checkError } = await db
       .from('quests')
       .select('*')
       .eq('user_id', req.userId)
       .eq('quest_date', today);
+
+    if (checkError) {
+      console.error('[quests] Check existing quests failed:', checkError.message);
+    }
 
     let quests;
 
@@ -127,7 +144,7 @@ router.get('/daily', authMiddleware, async (req, res) => {
     const randomEvent = await maybeGenerateRandomEvent(req.userId);
 
     // Get active event
-    const { data: activeEvent } = await supabase
+    const { data: activeEvent, error: eventError } = await db
       .from('random_events')
       .select('*')
       .eq('user_id', req.userId)
@@ -135,6 +152,10 @@ router.get('/daily', authMiddleware, async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    if (eventError) {
+      console.warn('[quests] Fetch active event failed:', eventError.message);
+    }
 
     res.json({ quests, randomEvent: activeEvent || randomEvent });
   } catch (err) {

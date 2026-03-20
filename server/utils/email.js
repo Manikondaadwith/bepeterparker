@@ -1,20 +1,39 @@
 import nodemailer from 'nodemailer';
 
-// Configure the email transporter using Gmail
-// Requires an App Password for Gmail (2-Step Verification)
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD
+let transporter = null;
+
+const getTransporter = () => {
+  if (transporter) return transporter;
+
+  console.log('[email] Creating transporter lazily...');
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.warn('[email] Credentials missing from environment.');
+    return null;
   }
-});
+
+  try {
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD
+      }
+    });
+    console.log('[email] Transporter created.');
+    return transporter;
+  } catch (err) {
+    console.error('[email] Creation failed:', err.message);
+    return null;
+  }
+};
 
 export const sendOTP = async (to, otp) => {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    console.warn('⚠️ Email credentials not configured. OTP generated but NOT explicitly sent via email.');
-    console.warn(`[DEV OVERRIDE] Sent OTP ${otp} to ${to}`);
-    // In dev mode or without configured email, we succeed silently so the user can see it in terminal
+  console.log(`[email] Preparing to send OTP for: ${to}`);
+  const mailTransporter = getTransporter();
+
+  if (!mailTransporter) {
+    console.warn('[email] Skipping real email – falling back to console log.');
+    console.log(`[DEV OVERRIDE] Sent OTP ${otp} to ${to}`);
     return { success: true };
   }
 
@@ -38,10 +57,12 @@ export const sendOTP = async (to, otp) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    console.log('[email] Dispatching email...');
+    await mailTransporter.sendMail(mailOptions);
+    console.log('[email] Dispatch successful.');
     return { success: true };
   } catch (error) {
-    console.error('Failed to send OTP email:', error);
+    console.error('[email] Dispatch failed:', error.message);
     return { success: false, error: error.message };
   }
 };

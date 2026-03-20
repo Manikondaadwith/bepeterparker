@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { generateToken, authMiddleware } from '../middleware/auth.js';
-import { supabase } from '../db/supabase.js';
+import { getSupabaseClient } from '../db/supabase.js';
 import { sendOTP } from '../utils/email.js';
 
 const router = Router();
@@ -196,40 +196,51 @@ router.post('/signup-verify', async (req, res) => {
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
+  console.log('[auth] Login request received.');
   try {
     const { email, password } = req.body;
+    console.log(`[auth] Attempting login for: ${email}`);
+    
     if (!email || !password) {
+      console.warn('[auth] Missing email or password.');
       return res.status(400).json({ error: 'Email and password are required' });
-    }
-    if (typeof email !== 'string' || typeof password !== 'string') {
-      return res.status(400).json({ error: 'Invalid payload format' });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+    const db = getSupabaseClient();
+    console.log('[auth] Fetching user from Supabase...');
 
     // Fetch user including the password hash
-    const { data: user, error: fetchError } = await supabase
+    const { data: user, error: fetchError } = await db
       .from('users')
       .select('*')
       .eq('email', normalizedEmail)
       .single();
 
-    // If user doesn't exist, generic error
-    if (fetchError || !user) {
+    if (fetchError) {
+      console.error('[auth] Fetch error:', fetchError.message);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Check password
+    if (!user) {
+      console.warn('[auth] User not found.');
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    console.log('[auth] Comparing passwords...');
     if (!user.password_hash) {
-      // Legacy account that might have no password set properly
+      console.warn('[auth] Account has no password hash set.');
       return res.status(401).json({ error: 'This account uses OTP or has no password set. Please use forgot password.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
+      console.warn('[auth] Password mismatch.');
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    console.log('[auth] Login successful, generating token...');
+    
     // Update streak logic
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
@@ -243,7 +254,7 @@ router.post('/login', async (req, res) => {
 
     const longestStreak = Math.max(streak, user.longest_streak || 0);
 
-    const { data: updatedUser, error: updateError } = await supabase
+    const { data: updatedUser, error: updateError } = await db
       .from('users')
       .update({ last_active: today, streak, longest_streak: longestStreak })
       .eq('id', user.id)
@@ -251,14 +262,13 @@ router.post('/login', async (req, res) => {
       .single();
 
     if (updateError) {
-      console.error('Update user error:', updateError);
-      // If update fails, use original user data
+      console.warn('[auth] Update user streak failed:', updateError.message);
     }
 
     const finalUser = updatedUser || user;
-
-    // Return token
     const token = generateToken(finalUser.id);
+
+    console.log('[auth] Dispatching response.');
     res.json({
       token,
       user: {
@@ -272,8 +282,11 @@ router.post('/login', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ error: err.message || 'Server error during login' });
+    console.error('[auth] CRITICAL login error:', err.message);
+    res.status(500).json({ 
+      error: 'Internal server error during login',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined 
+    });
   }
 });
 

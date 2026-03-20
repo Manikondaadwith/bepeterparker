@@ -1,19 +1,24 @@
 import { Router } from 'express';
-import { supabase } from '../db/supabase.js';
+import { getSupabaseClient } from '../db/supabase.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 
 // GET /api/skills - Get user's skill nodes
 router.get('/', authMiddleware, async (req, res) => {
+  console.log(`[skills] Fetching skills for user ${req.userId}...`);
   try {
-    const { data: skills, error } = await supabase
+    const db = getSupabaseClient();
+    const { data: skills, error } = await db
       .from('skills')
       .select('*')
       .eq('user_id', req.userId)
       .order('xp', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('[skills] Fetch error:', error.message);
+      throw error;
+    }
     
     res.json({ skills: skills || [] });
   } catch (err) {
