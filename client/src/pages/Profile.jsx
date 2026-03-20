@@ -126,9 +126,10 @@ export default function Profile() {
     setTestPushLoading(true);
     try {
       await api.sendTestPush();
+      alert('Test mission dispatched! Check your device notifications.');
     } catch (err) {
       console.error('Failed to send test push:', err);
-      alert('Failed to send test push. Ensure you have enabled notifications first.');
+      alert(`Failed to send test push: ${err.message || 'Unknown error'}`);
     } finally {
       setTestPushLoading(false);
     }
