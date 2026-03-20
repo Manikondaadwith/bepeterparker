@@ -1,7 +1,4 @@
 {
-  "version": 2,
-  "cleanUrls": true,
-  "trailingSlash": false,
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -9,12 +6,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/client/dist/$1",
-      "continue": true
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/client/dist/index.html"
+      "destination": "/index.html"
     }
   ]
 }
