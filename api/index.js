@@ -1,18 +1,18 @@
-import app from '../server/server.js';
-
-// Fallback for Vercel in case the main app fails to load or process.env is missing.
-const bridgeHandler = (req, res) => {
+// Dynamic import bridge for Vercel
+// This ensures compatibility between ESM and CommonJS in Vercel's environment.
+export default async function handler(req, res) {
   try {
+    // Dynamically import the Express app
+    const { default: app } = await import('../server/server.js');
+    
+    // Hand off the request to Express
     return app(req, res);
   } catch (err) {
     console.error('Vercel Bridge Error:', err);
     res.status(500).json({
-      error: 'Serverless Function Invocation Failed',
+      error: 'Vercel Function Invocation Failed',
       message: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-      hint: 'Check your Vercel environment variables (SUPABASE_URL, etc.)'
+      hint: 'This is usually an ESM/CommonJS mismatch or missing dependencies.'
     });
   }
-};
-
-export default bridgeHandler;
+}
