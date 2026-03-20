@@ -63,16 +63,27 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-// Handle push events (skeleton for future Push Notification setup)
+// Handle push events
 self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.json() : {};
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { body: event.data ? event.data.text() : 'New missions await you.' };
+  }
+
   const title = data.title || 'Spider-Verse Alert!';
   const options = {
     body: data.body || 'New missions await you.',
-    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🕷️</text></svg>',
-    badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🕸️</text></svg>',
+    icon: data.icon || '/icons/icon-192x192.png',
+    badge: '/icons/icon-192x192.png',
     vibrate: [200, 100, 200],
-    data: { url: data.url || '/' }
+    data: { 
+      url: data.data?.url || data.url || '/' 
+    },
+    actions: [
+      { action: 'open', title: 'View Mission' }
+    ]
   };
 
   event.waitUntil(

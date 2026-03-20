@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { NotificationService } from '../services/notificationService';
 
 export default function Profile() {
   const { user, logout, changePassword } = useAuth();
@@ -17,12 +18,19 @@ export default function Profile() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [notificationStatus, setNotificationStatus] = useState('loading');
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [testPushLoading, setTestPushLoading] = useState(false);
 
   useEffect(() => {
     async function load() {
       try {
         const data = await api.getProfile();
         setProfile(data);
+        
+        // Initial notification status
+        const status = await NotificationService.getPermissionStatus();
+        setNotificationStatus(status);
       } catch (err) {
         console.error('Profile load error:', err);
       } finally {
@@ -92,6 +100,37 @@ export default function Profile() {
       setUsernameError(err.message || 'Failed to change username');
     } finally {
       setUsernameLoading(false);
+    }
+  };
+
+  const handleEnableNotifications = async () => {
+    setNotificationLoading(true);
+    try {
+      const granted = await NotificationService.requestPermission();
+      if (!granted) {
+        setNotificationStatus('denied');
+        return;
+      }
+      
+      await NotificationService.subscribe();
+      setNotificationStatus('granted');
+    } catch (err) {
+      console.error('Failed to enable notifications:', err);
+      alert('Failed to enable notifications. Make sure you are using a secure connection (HTTPS or localhost).');
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+
+  const handleSendTestPush = async () => {
+    setTestPushLoading(true);
+    try {
+      await api.sendTestPush();
+    } catch (err) {
+      console.error('Failed to send test push:', err);
+      alert('Failed to send test push. Ensure you have enabled notifications first.');
+    } finally {
+      setTestPushLoading(false);
     }
   };
 
@@ -282,6 +321,56 @@ export default function Profile() {
             </p>
           </motion.div>
         )}
+
+        {/* Notification Settings */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.85 }}
+          className="glass-card p-4 sm:p-6 mb-5 sm:mb-8">
+          <h3 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">🔔 Notification Settings</h3>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex-1">
+              <p className="text-sm font-semibold">Web Push Notifications</p>
+              <p className="text-xs" style={{ color: 'var(--color-verse-muted)' }}>
+                {notificationStatus === 'granted' 
+                  ? 'Notifications are enabled on this device.' 
+                  : notificationStatus === 'denied'
+                  ? 'Notifications are blocked. Please reset permissions in your browser.'
+                  : 'Get real-time alerts for new quests and events.'}
+              </p>
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto">
+              {notificationStatus !== 'granted' ? (
+                <button
+                  onClick={handleEnableNotifications}
+                  disabled={notificationLoading || notificationStatus === 'unsupported'}
+                  className="flex-1 sm:flex-initial px-6 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all whitespace-nowrap"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--color-spider-red), var(--color-spider-red-light))',
+                    color: 'white',
+                    cursor: notificationStatus === 'unsupported' ? 'not-allowed' : 'pointer',
+                    opacity: (notificationLoading || notificationStatus === 'unsupported') ? 0.5 : 1
+                  }}
+                >
+                  {notificationLoading ? 'Enabling...' : 'Enable Notifications'}
+                </button>
+              ) : (
+                <button
+                  onClick={handleSendTestPush}
+                  disabled={testPushLoading}
+                  className="flex-1 sm:flex-initial px-6 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all whitespace-nowrap"
+                  style={{
+                    background: 'rgba(255,215,0,0.2)',
+                    color: 'var(--color-spider-gold)',
+                    border: '1px solid rgba(255,215,0,0.3)',
+                    cursor: 'pointer',
+                    opacity: testPushLoading ? 0.5 : 1
+                  }}
+                >
+                  {testPushLoading ? 'Sending...' : 'Send Test Mission'}
+                </button>
+              )}
+            </div>
+          </div>
+        </motion.div>
 
         {/* Change Username & Password & Logout Section */}
         <motion.div 

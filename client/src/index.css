@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
-/* ===== Spider-Verse Design System ===== */
+/* ===== Spider-Verse Design System v2 — "bepeterparker" ===== */
 
 @theme {
   --color-spider-red: #DC143C;
@@ -18,6 +18,8 @@
   --color-verse-border: #21262D;
   --color-verse-text: #E6EDF3;
   --color-verse-muted: #8B949E;
+  --color-chaos-cyan: #00F5FF;
+  --color-boss-orange: #FF6B35;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
@@ -49,7 +51,6 @@ body {
 
 a { text-decoration: none; color: inherit; }
 
-/* Prevent horizontal overflow on all containers */
 .max-w-6xl, .max-w-4xl, .max-w-md {
   max-width: 100%;
 }
@@ -61,7 +62,6 @@ a { text-decoration: none; color: inherit; }
   ::-webkit-scrollbar-thumb { background: var(--color-spider-red); border-radius: 3px; }
 }
 
-/* Hide scrollbar on mobile for smoother feel */
 @media (max-width: 767px) {
   ::-webkit-scrollbar { display: none; }
   body { scrollbar-width: none; }
@@ -98,6 +98,55 @@ a { text-decoration: none; color: inherit; }
   100% { transform: translateY(0); opacity: 1; }
 }
 
+/* ===== NEW v2 Animations ===== */
+
+@keyframes ambient-glow-red {
+  0%, 100% { box-shadow: 0 0 15px rgba(220,20,60,0.1), inset 0 0 15px rgba(220,20,60,0.03); }
+  50% { box-shadow: 0 0 30px rgba(220,20,60,0.2), inset 0 0 30px rgba(220,20,60,0.05); }
+}
+
+@keyframes ambient-glow-blue {
+  0%, 100% { box-shadow: 0 0 15px rgba(59,130,246,0.1), inset 0 0 15px rgba(59,130,246,0.03); }
+  50% { box-shadow: 0 0 30px rgba(59,130,246,0.2), inset 0 0 30px rgba(59,130,246,0.05); }
+}
+
+@keyframes xp-burst {
+  0% { transform: scale(0.8); opacity: 0; filter: blur(4px); }
+  40% { transform: scale(1.15); opacity: 1; filter: blur(0); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes mission-briefing-in {
+  0% { opacity: 0; transform: translateY(-30px) scale(0.95); filter: blur(8px); }
+  60% { opacity: 1; transform: translateY(5px) scale(1.02); filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes streak-fire {
+  0%, 100% { text-shadow: 0 0 4px rgba(255,107,53,0.6), 0 0 8px rgba(255,215,0,0.3); }
+  50% { text-shadow: 0 0 8px rgba(255,107,53,0.9), 0 0 16px rgba(255,215,0,0.5); }
+}
+
+@keyframes chaos-pulse {
+  0%, 100% { border-color: rgba(0,245,255,0.3); box-shadow: 0 0 10px rgba(0,245,255,0.1); }
+  50% { border-color: rgba(0,245,255,0.7); box-shadow: 0 0 25px rgba(0,245,255,0.3); }
+}
+
+@keyframes card-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes boss-pulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(255,107,53,0.2); }
+  50% { box-shadow: 0 0 35px rgba(255,107,53,0.5), 0 0 60px rgba(220,20,60,0.2); }
+}
+
+@keyframes particle-float {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-60px) scale(0.3); opacity: 0; }
+}
+
 /* ===== Web Pattern Overlay ===== */
 .web-overlay {
   position: fixed;
@@ -113,40 +162,111 @@ a { text-decoration: none; color: inherit; }
   animation: web-pattern 4s linear infinite;
 }
 
-/* ===== Glass Card ===== */
+/* ===== Glass Card v2 — Enhanced Glassmorphism ===== */
 .glass-card {
-  background: linear-gradient(135deg, rgba(13,17,23,0.9), rgba(22,27,34,0.8));
-  border: 1px solid var(--color-verse-border);
+  background: linear-gradient(135deg, rgba(13,17,23,0.92), rgba(22,27,34,0.82));
+  border: 1px solid rgba(33,38,45,0.8);
   border-radius: 16px;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-wrap: break-word;
   word-break: break-word;
+  position: relative;
 }
 
-/* Reduce hover effects on touch devices */
+/* Subtle shimmer overlay on glass cards */
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    transparent 30%,
+    rgba(255,255,255,0.02) 50%,
+    transparent 70%
+  );
+  background-size: 200% 200%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass-card > * {
+  position: relative;
+  z-index: 1;
+}
+
 @media (hover: hover) {
   .glass-card:hover {
-    border-color: var(--color-spider-red);
-    box-shadow: 0 0 20px rgba(220,20,60,0.15);
+    border-color: rgba(220,20,60,0.4);
+    box-shadow: 
+      0 0 20px rgba(220,20,60,0.12),
+      0 8px 32px rgba(0,0,0,0.3),
+      inset 0 0 30px rgba(220,20,60,0.03);
+    transform: translateY(-2px);
   }
 }
 
-/* Mobile: slightly smaller border-radius */
 @media (max-width: 430px) {
   .glass-card {
     border-radius: 12px;
   }
 }
 
-/* ===== Quest Card Type Indicators ===== */
-.quest-spider { border-left: 3px solid var(--color-spider-red); }
-.quest-side { border-left: 3px solid var(--color-spider-blue-light); }
-.quest-exploration { border-left: 3px solid var(--color-spider-gold); }
-.quest-creativity { border-left: 3px solid var(--color-spider-purple); }
-.quest-physical { border-left: 3px solid #10B981; }
+/* ===== Glass Card Depth Variants ===== */
+.glass-card-deep {
+  composes: glass-card;
+  background: linear-gradient(135deg, rgba(8,10,18,0.95), rgba(16,20,28,0.88));
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
+}
 
-/* ===== Spider Button ===== */
+.glass-card-glow {
+  animation: ambient-glow-red 4s ease-in-out infinite;
+}
+
+.glass-card-glow-blue {
+  animation: ambient-glow-blue 4s ease-in-out infinite;
+}
+
+/* ===== Quest Card Type Indicators — Enhanced ===== */
+.quest-spider { 
+  border-left: 3px solid var(--color-spider-red); 
+  box-shadow: -2px 0 12px rgba(220,20,60,0.08);
+}
+.quest-side { 
+  border-left: 3px solid var(--color-spider-blue-light); 
+  box-shadow: -2px 0 12px rgba(59,130,246,0.08);
+}
+.quest-exploration { 
+  border-left: 3px solid var(--color-spider-gold); 
+  box-shadow: -2px 0 12px rgba(255,215,0,0.08);
+}
+.quest-creativity { 
+  border-left: 3px solid var(--color-spider-purple); 
+  box-shadow: -2px 0 12px rgba(124,58,237,0.08);
+}
+.quest-physical { 
+  border-left: 3px solid #10B981; 
+  box-shadow: -2px 0 12px rgba(16,185,129,0.08);
+}
+.quest-chaos { 
+  border-left: 3px solid var(--color-chaos-cyan); 
+  box-shadow: -2px 0 12px rgba(0,245,255,0.12);
+  animation: chaos-pulse 3s ease-in-out infinite;
+}
+
+/* ===== Hover Tilt Effect ===== */
+@media (hover: hover) {
+  .hover-tilt {
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .hover-tilt:hover {
+    transform: perspective(800px) rotateX(2deg) rotateY(-2deg) translateY(-4px) scale(1.02);
+  }
+}
+
+/* ===== Spider Button v2 ===== */
 .spider-btn {
   background: linear-gradient(135deg, var(--color-spider-red), var(--color-spider-red-dark));
   color: white;
@@ -155,15 +275,14 @@ a { text-decoration: none; color: inherit; }
   font-weight: 600;
   border: none;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-  /* Prevent text from overflowing */
   white-space: nowrap;
   text-overflow: ellipsis;
+  box-shadow: 0 2px 12px rgba(220,20,60,0.25);
 }
 
-/* Mobile: slightly smaller padding */
 @media (max-width: 430px) {
   .spider-btn {
     padding: 10px 16px;
@@ -175,7 +294,7 @@ a { text-decoration: none; color: inherit; }
 @media (hover: hover) {
   .spider-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(220,20,60,0.4);
+    box-shadow: 0 8px 25px rgba(220,20,60,0.45), 0 0 40px rgba(220,20,60,0.15);
   }
 }
 
@@ -187,7 +306,7 @@ a { text-decoration: none; color: inherit; }
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%);
+  background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
   transform: translateX(-100%);
   transition: transform 0.5s;
 }
@@ -198,13 +317,55 @@ a { text-decoration: none; color: inherit; }
   }
 }
 
-/* ===== XP Bar ===== */
+/* ===== Chaos Button ===== */
+.chaos-btn {
+  background: linear-gradient(135deg, #0D1117, #1a1a2e);
+  color: var(--color-chaos-cyan);
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(0,245,255,0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (hover: hover) {
+  .chaos-btn:hover {
+    box-shadow: 0 0 20px rgba(0,245,255,0.3), inset 0 0 20px rgba(0,245,255,0.05);
+    border-color: rgba(0,245,255,0.6);
+    transform: translateY(-2px);
+  }
+}
+
+/* ===== Boss Battle Button ===== */
+.boss-btn {
+  background: linear-gradient(135deg, rgba(255,107,53,0.9), rgba(220,20,60,0.8));
+  color: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  animation: boss-pulse 3s ease-in-out infinite;
+  transition: all 0.3s ease;
+}
+
+@media (hover: hover) {
+  .boss-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+  }
+}
+
+/* ===== XP Bar v2 ===== */
 .xp-bar-container {
   background: var(--color-verse-panel);
   border-radius: 999px;
   height: 16px;
   overflow: hidden;
   border: 1px solid var(--color-verse-border);
+  position: relative;
 }
 
 @media (max-width: 430px) {
@@ -220,15 +381,38 @@ a { text-decoration: none; color: inherit; }
   animation: xp-fill 1s ease-out;
   transition: width 0.8s ease;
   position: relative;
+  box-shadow: 0 0 12px rgba(220,20,60,0.3);
 }
 
 .xp-bar-fill::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  animation: web-pattern 2s linear infinite;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  background-size: 200% 100%;
+  animation: card-shimmer 2s linear infinite;
 }
+
+/* ===== XP Burst Animation ===== */
+.xp-burst {
+  animation: xp-burst 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ===== Mission Briefing Entrance ===== */
+.mission-briefing-enter {
+  animation: mission-briefing-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ===== Streak Fire Effect ===== */
+.streak-fire {
+  animation: streak-fire 1.5s ease-in-out infinite;
+}
+
+/* ===== Stat Card Ambient Glow ===== */
+.stat-glow-level { box-shadow: 0 0 20px rgba(255,215,0,0.08), inset 0 0 20px rgba(255,215,0,0.03); }
+.stat-glow-streak { box-shadow: 0 0 20px rgba(255,68,102,0.08), inset 0 0 20px rgba(255,68,102,0.03); }
+.stat-glow-today { box-shadow: 0 0 20px rgba(16,185,129,0.08), inset 0 0 20px rgba(16,185,129,0.03); }
+.stat-glow-skills { box-shadow: 0 0 20px rgba(124,58,237,0.08), inset 0 0 20px rgba(124,58,237,0.03); }
 
 /* ===== Skill Node ===== */
 .skill-node {
@@ -244,7 +428,7 @@ a { text-decoration: none; color: inherit; }
 /* ===== Auth Pages ===== */
 .auth-container {
   min-height: 100vh;
-  min-height: 100dvh; /* dynamic viewport height for mobile */
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -276,7 +460,6 @@ a { text-decoration: none; color: inherit; }
   border-radius: 50%;
 }
 
-/* Mobile auth adjustments */
 @media (max-width: 430px) {
   .auth-container .glass-card {
     padding: 24px 20px !important;
@@ -291,7 +474,7 @@ a { text-decoration: none; color: inherit; }
   border: 1px solid var(--color-verse-border);
   border-radius: 10px;
   color: var(--color-verse-text);
-  font-size: 16px; /* Prevents iOS zoom on focus */
+  font-size: 16px;
   transition: all 0.3s ease;
   outline: none;
   -webkit-appearance: none;
@@ -300,14 +483,14 @@ a { text-decoration: none; color: inherit; }
 
 .spider-input:focus {
   border-color: var(--color-spider-red);
-  box-shadow: 0 0 0 3px rgba(220,20,60,0.15);
+  box-shadow: 0 0 0 3px rgba(220,20,60,0.15), 0 0 15px rgba(220,20,60,0.08);
 }
 
 .spider-input::placeholder {
   color: var(--color-verse-muted);
 }
 
-/* ===== Desktop Nav ===== */
+/* ===== Desktop Nav v2 ===== */
 .nav-link {
   color: var(--color-verse-muted);
   transition: all 0.3s ease;
@@ -321,6 +504,10 @@ a { text-decoration: none; color: inherit; }
   background: rgba(220,20,60,0.1);
 }
 
+.nav-link.active {
+  box-shadow: 0 0 12px rgba(220,20,60,0.15);
+}
+
 .nav-link.active::after {
   content: '';
   position: absolute;
@@ -331,6 +518,7 @@ a { text-decoration: none; color: inherit; }
   height: 2px;
   background: var(--color-spider-red);
   border-radius: 1px;
+  box-shadow: 0 0 8px rgba(220,20,60,0.5);
 }
 
 /* ===== Mobile Top Bar ===== */
@@ -360,12 +548,10 @@ a { text-decoration: none; color: inherit; }
 }
 
 .mobile-tab-link.active span:first-child {
-  filter: drop-shadow(0 0 4px rgba(220,20,60,0.6));
+  filter: drop-shadow(0 0 6px rgba(220,20,60,0.7));
 }
 
 /* ===== Page Layout Helpers ===== */
-
-/* Desktop: account for top navbar */
 .page-container {
   min-height: 100vh;
   min-height: 100dvh;
@@ -373,14 +559,12 @@ a { text-decoration: none; color: inherit; }
   background: var(--color-verse-bg);
 }
 
-/* Mobile: account for top header + bottom tab bar */
 @media (max-width: 767px) {
   .page-container {
     padding: 68px 12px 88px;
   }
 }
 
-/* Mobile content wrapper — prevents overflow */
 .mobile-safe {
   max-width: 100%;
   overflow-x: hidden;
@@ -399,6 +583,28 @@ a { text-decoration: none; color: inherit; }
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* ===== Gradient Text Utility ===== */
+.gradient-text-red {
+  background: linear-gradient(135deg, var(--color-spider-red), var(--color-spider-red-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-gold {
+  background: linear-gradient(135deg, var(--color-spider-gold), #FFA500);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-chaos {
+  background: linear-gradient(135deg, var(--color-chaos-cyan), #00FF88);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* ===== PWA Standalone Mode Styles ===== */

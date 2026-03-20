@@ -201,6 +201,9 @@ router.post('/login', async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
+    if (typeof email !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ error: 'Invalid payload format' });
+    }
 
     const normalizedEmail = email.toLowerCase().trim();
 
@@ -270,7 +273,7 @@ router.post('/login', async (req, res) => {
 
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({ error: 'Server error during login' });
+    res.status(500).json({ error: err.message || 'Server error during login' });
   }
 });
 

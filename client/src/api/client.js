@@ -68,10 +68,20 @@ export const api = {
   getDailyQuests: () => request('/quests/daily'),
   completeQuest: (id) => request(`/quests/${id}/complete`, { method: 'POST' }),
   getQuestHistory: () => request('/quests/history'),
+  getChaosQuest: () => request('/quests/chaos'),
+  getBossBattle: () => request('/quests/boss-battle'),
+  completeBossBattle: (bonusXP) => request('/quests/boss-battle/complete', { method: 'POST', body: JSON.stringify({ bonusXP }) }),
 
   // Skills
   getSkills: () => request('/skills'),
 
   // Profile
   getProfile: () => request('/profile'),
+
+  // EDITH Assistant
+  askEdith: (message) => request('/assistant', { method: 'POST', body: JSON.stringify({ message }) }),
+
+  // Notifications
+  subscribeToPush: (subscription) => request('/notifications/subscribe', { method: 'POST', body: JSON.stringify({ subscription }) }),
+  sendTestPush: () => request('/notifications/test', { method: 'POST' }),
 };

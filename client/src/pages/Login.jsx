@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -48,10 +49,10 @@ export default function Login() {
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent'
             }}>
-              Spider-Verse Quest
+              BePeterParker
             </h1>
             <p style={{ color: 'var(--color-verse-muted)' }} className="text-sm">
-              Enter the multiverse of knowledge
+              Your AI-powered evolution system
             </p>
           </div>
 
@@ -68,7 +69,9 @@ export default function Login() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-verse-muted)' }}>Email</label>
+              <label className="block text-sm font-medium mb-2 flex items-center gap-1.5" style={{ color: 'var(--color-verse-muted)' }}>
+                <Mail size={14} /> Email
+              </label>
               <input
                 type="email"
                 value={email}
@@ -80,7 +83,9 @@ export default function Login() {
             </div>
             <div>
               <div className="flex justify-between mb-2">
-                <label className="block text-sm font-medium" style={{ color: 'var(--color-verse-muted)' }}>Password</label>
+                <label className="block text-sm font-medium flex items-center gap-1.5" style={{ color: 'var(--color-verse-muted)' }}>
+                  <Lock size={14} /> Password
+                </label>
                 <Link to="/forgot-password" className="text-sm hover:underline" style={{ color: 'var(--color-spider-red-light)' }}>
                   Forgot?
                 </Link>
@@ -98,15 +103,19 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading || !email || !password}
-              className="spider-btn w-full text-center mt-6"
+              className="spider-btn w-full text-center mt-6 flex items-center justify-center gap-2"
               style={{ opacity: loading ? 0.7 : 1 }}
             >
               {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>🕸️</motion.span>
-                  Logging in...
-                </span>
-              ) : 'Enter the Spider-Verse'}
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  Enter the Spider-Verse <ArrowRight size={16} />
+                </>
+              )}
             </button>
 
             <div className="text-center mt-6 pt-4 border-t border-gray-800">

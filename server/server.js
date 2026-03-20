@@ -7,6 +7,9 @@ import authRoutes from './routes/auth.js';
 import questRoutes from './routes/quests.js';
 import skillRoutes from './routes/skills.js';
 import profileRoutes from './routes/profile.js';
+import assistantRoutes from './routes/assistant.js';
+import notificationRoutes from './routes/notifications.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,11 +27,11 @@ const configuredOrigins = process.env.CORS_ORIGINS
 
 const allowedOrigins = process.env.CORS_ORIGINS
   ? [
-      ...new Set([
-        ...configuredOrigins,
-        ...(process.env.NODE_ENV !== 'production' ? defaultDevOrigins : []),
-      ])
-    ]
+    ...new Set([
+      ...configuredOrigins,
+      ...(process.env.NODE_ENV !== 'production' ? defaultDevOrigins : []),
+    ])
+  ]
   : defaultDevOrigins;
 
 if (process.env.NODE_ENV === 'production' && allowedOrigins.includes('*')) {
@@ -61,6 +64,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/quests', questRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/assistant', assistantRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

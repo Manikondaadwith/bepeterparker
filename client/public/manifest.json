@@ -1,7 +1,7 @@
 {
-  "name": "Spider-Verse Quest Engine",
-  "short_name": "SpiderQuest",
-  "description": "Turn your life into a Spider-Man themed RPG training system",
+  "name": "BePeterParker",
+  "short_name": "BePeterParker",
+  "description": "Your AI-powered daily training system. Evolve with personalized quests and EDITH.",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#050510",

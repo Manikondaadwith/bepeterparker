@@ -9,17 +9,32 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const migrations = [
   path.join(__dirname, 'migrations', '001_initial_schema.sql'),
-  path.join(__dirname, 'migrations', '002_add_password.sql')
+  path.join(__dirname, 'migrations', '002_add_password.sql'),
+  path.join(__dirname, 'migrations', '003_create_push_subscriptions.sql')
 ];
 
 async function runMigrations() {
-  const projectRef = 'lmkulnjopiyrvnrbdbzn';
+  // Derive project ref from SUPABASE_URL (e.g. https://abc123.supabase.co → abc123)
+  const supabaseUrl = process.env.SUPABASE_URL;
+  if (!supabaseUrl) {
+    console.error('❌ SUPABASE_URL is not set. Please configure your .env file.');
+    process.exit(1);
+  }
+  const projectRef = new URL(supabaseUrl).hostname.split('.')[0];
+
+  const dbPassword = process.env.SUPABASE_DB_PASSWORD;
+  if (!dbPassword) {
+    console.error('❌ SUPABASE_DB_PASSWORD is not set. Add it to your .env file.');
+    console.error('   You can find it in Supabase Dashboard → Project Settings → Database.');
+    process.exit(1);
+  }
+
   const client = new Client({
-    host: `${projectRef}.pooler.supabase.com`,
-    port: 6543,
+    host: process.env.SUPABASE_DB_HOST || `${projectRef}.pooler.supabase.com`,
+    port: parseInt(process.env.SUPABASE_DB_PORT || '6543', 10),
     database: 'postgres',
-    user: 'postgres.lmkulnjopiyrvnrbdbzn',
-    password: 'uB%JAdN+S@gUr5u',
+    user: process.env.SUPABASE_DB_USER || `postgres.${projectRef}`,
+    password: dbPassword,
   });
 
   try {

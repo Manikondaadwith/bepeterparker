@@ -6,6 +6,8 @@ import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import Navbar from './components/Navbar';
+import EdithAssistant from './components/EdithAssistant';
+import { Loader2 } from 'lucide-react';
 import './index.css';
 
 // Lazy load heavy pages (D3 is ~300KB, quest page is large)
@@ -17,8 +19,8 @@ function PageLoader() {
   return (
     <div className="page-container flex items-center justify-center">
       <div className="text-center">
-        <div className="text-5xl mb-4 animate-bounce">🕷️</div>
-        <p style={{ color: 'var(--color-verse-muted)' }}>Loading...</p>
+        <Loader2 size={40} className="animate-spin mx-auto mb-4" style={{ color: 'var(--color-spider-red)' }} />
+        <p className="text-sm" style={{ color: 'var(--color-verse-muted)' }}>Loading...</p>
       </div>
     </div>
   );
@@ -38,6 +40,7 @@ function AppRoutes() {
   return (
     <>
       {user && <Navbar />}
+      {user && <EdithAssistant />}
       <div className="web-overlay" />
       <Suspense fallback={<PageLoader />}>
         <Routes>
