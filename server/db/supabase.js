@@ -10,8 +10,9 @@ if (!supabaseUrl) missingEnv.push('SUPABASE_URL');
 if (!supabaseKey) missingEnv.push('SUPABASE_SERVICE_ROLE_KEY');
 
 if (missingEnv.length > 0) {
-  throw new Error(
-    `[supabase] Missing required environment variables: ${missingEnv.join(', ')}.`
+  console.error(
+    `[supabase] Warning: Missing required environment variables: ${missingEnv.join(', ')}. ` +
+    `Database operations will fail until these are set in the Vercel Dashboard.`
   );
 }
 
