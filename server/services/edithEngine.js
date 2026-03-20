@@ -1,136 +1,191 @@
 /**
  * EDITH AI Engine Service
- * Handles core AI interactions for the BePeterParker system.
- * Uses OpenRouter for intelligent, fast, context-aware responses.
+ * Even Dead, I'm The Hero — Tactical AI System
  */
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-export async function generateAssistantReply(user, message, context) {
-  const { recentQuests = [], topSkills = '' } = context;
+const MODELS = [
+  'openrouter/free',
+];
 
-  const completedCount = recentQuests.filter(q => q.completed).length;
-  const recentQuestTitles = recentQuests.slice(0, 6).map(q => `${q.completed ? '[DONE]' : '[TODO]'} ${q.title}`).join('\n');
+if (!process.env.OPENROUTER_API_KEY) {
+  throw new Error('[EDITH] Missing OPENROUTER_API_KEY environment variable');
+}
 
-  const systemPrompt = `You are EDITH (Even Dead, I'm The Hero), an advanced AI assistant embedded in the BePeterParker training system.
-Your role is to guide, evaluate, and evolve the user. Be concise, sharp, context-aware, and act like J.A.R.V.I.S.
+const BASE_HEADERS = {
+  Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+  'HTTP-Referer': 'https://bepeterparker.vercel.app',
+  'X-Title': 'BePeterParker',
+  'Content-Type': 'application/json',
+};
 
-USER CONTEXT:
-- Name: ${user.username || 'Hero'}
-- Level: ${user.level || 1}
-- Total XP: ${user.xp || 0}
-- Current Streak: ${user.streak || 0} days
-- Quests completion: ${completedCount}/${recentQuests.length || 0}
-- Top skills: ${topSkills || 'None yet'}
+// ─── Shared fetch with timeout + retry ───────────────────────────────────────
 
-RECENT QUESTS:
-${recentQuestTitles || 'No quests yet'}
-
-RULES:
-- Keep it under 3 sentences for speed and low latency.
-- Be highly intelligent, proactive, and natural.
-- Direct them based on their recent quests or skills.
-- Do NOT be generic. Provide actionable, sharp advice.`;
-
+async function fetchWithRetry(url, options, retries = 2, timeoutMs = 10_000) {
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'https://bepeterparker.vercel.app',
-        'X-Title': 'BePeterParker',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'openrouter/free',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
-        ],
-        temperature: 0.7,
-        max_tokens: 150
-      })
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-    if (!response.ok) {
-      throw new Error(`OpenRouter error: ${response.status}`);
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+
+    if (response.status === 429 && retries > 0) {
+      await delay(1000);
+      return fetchWithRetry(url, options, retries - 1, timeoutMs);
     }
 
-    const text = await response.text();
-    console.log("RAW RESPONSE:", text);
-
-    const data = JSON.parse(text);
-    const msg = data.choices?.[0]?.message || {};
-
-    let reply = msg.content;
-
-    // fallback for free models
-    if (!reply) {
-      reply = `Mofo i wont respond for basic shit. You are using free version of me remember?`;
-    }
-
-    return reply.trim();
+    return response;
   } catch (err) {
-    console.error('EDITH Engine FULL ERROR:', err.message);
-    // Fallback response for speed and robustness
-    return "My connection to the mainframe is currently unstable, but I'm rebooting systems. What do you need right now?";
+    if (retries > 0) return fetchWithRetry(url, options, retries - 1, timeoutMs);
+    throw err;
   }
 }
 
-export async function evaluateUserResponse(quest, responseText) {
-  const systemPrompt = `You are EDITH, evaluating a user's completion of a quest.
-QUEST TITLE: ${quest.title}
-QUEST DESCRIPTION: ${quest.description}
+// ─── Shared OpenRouter call (model waterfall) ─────────────────────────────────
+
+async function callOpenRouter(payload, { tryAllModels = true } = {}) {
+  const models = tryAllModels ? MODELS : [MODELS[0]];
+  let lastError;
+
+  for (const model of models) {
+    try {
+      const response = await fetchWithRetry(OPENROUTER_URL, {
+        method: 'POST',
+        headers: BASE_HEADERS,
+        body: JSON.stringify({ ...payload, model }),
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status} from ${model}`);
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      if (!content) throw new Error(`Empty response from ${model}`);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[EDITH] Model used: ${model}`);
+      }
+
+      return { content: content.trim(), model };
+    } catch (err) {
+      lastError = err;
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`[EDITH] ${model} failed:`, err.message);
+      }
+    }
+  }
+
+  throw lastError;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function stripJsonFences(text) {
+  return text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+}
+
+function safeJsonParse(text) {
+  try {
+    return JSON.parse(stripJsonFences(text));
+  } catch {
+    return null;
+  }
+}
+
+// ─── System prompt builders ───────────────────────────────────────────────────
+
+function buildAssistantSystemPrompt(user, context) {
+  const { recentQuests = [], topSkills = '' } = context;
+  const completedCount = recentQuests.filter((q) => q.completed).length;
+
+  const questList = recentQuests
+    .slice(0, 6)
+    .map((q) => `${q.completed ? '[DONE]' : '[TODO]'} ${q.title}`)
+    .join('\n') || 'None';
+
+  return `You are EDITH (Even Dead, I'm The Hero), a tactical AI system (JARVIS-style).
+
+USER:
+- Name: ${user.username || 'Hero'}
+- Level: ${user.level || 1} | XP: ${user.xp || 0} | Streak: ${user.streak || 0}
+- Quests: ${completedCount}/${recentQuests.length || 0}
+- Skills: ${topSkills || 'None'}
+
+RECENT QUESTS:
+${questList}
+
+RULES:
+- Precise, actionable, sharp — no generic advice
+- Markdown: bullet points, short sections, no long paragraphs
+- Keep responses under 120 words unless absolutely necessary`;
+}
+
+function buildEvaluationSystemPrompt(quest, responseText) {
+  return `Evaluate quest completion.
+
+QUEST: ${quest.title}
+DESCRIPTION: ${quest.description}
 USER RESPONSE: ${responseText}
 
-Evaluate the response based on:
-1. Relevance to the quest.
-2. Effort shown.
-3. Correctness/Validity.
-
-You MUST respond strictly in valid JSON format with the following keys:
+Return ONLY valid JSON (no markdown, no extra text):
 {
-  "score": <number 0-100>,
-  "feedback": "<short constructive feedback, 1-2 sentences. Speak as EDITH>",
-  "completed": <boolean true if acceptable effort, false if lazy/unrelated>
+  "score": <0-100>,
+  "feedback": "<short, specific feedback>",
+  "completed": <true | false>
 }`;
+}
 
+// ─── Public API ───────────────────────────────────────────────────────────────
+
+/**
+ * Generate a tactical AI reply for the given user message.
+ */
+export async function generateAssistantReply(user, message, context) {
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'https://bepeterparker.vercel.app',
-        'X-Title': 'BePeterParker',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'openrouter/free',
-        messages: [{ role: 'system', content: systemPrompt }],
-        temperature: 0.3,
-        response_format: { type: 'json_object' }
-      })
+    const { content } = await callOpenRouter({
+      messages: [
+        { role: 'system', content: buildAssistantSystemPrompt(user, context) },
+        { role: 'user', content: message },
+      ],
+      temperature: 0.7,
+      max_tokens: 300,
     });
 
-    if (!response.ok) throw new Error(`OpenRouter error: ${response.status}`);
-    const data = await response.json();
-    let content = data.choices[0].message.content.trim();
-
-    // In case model wraps in markdown
-    if (content.startsWith('\`\`\`json')) {
-      content = content.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
-    } else if (content.startsWith('\`\`\`')) {
-      content = content.replace(/\`\`\`/g, '').trim();
-    }
-
-    return JSON.parse(content);
+    return content;
   } catch (err) {
-    console.error('EDITH Evaluation error:', err);
-    // Fallback: auto-approve if LLM fails, don't block user progress
-    return {
-      score: 80,
-      feedback: "My advanced sensors failed to process your exact input, but I sense you put in the work. Good job.",
-      completed: true
-    };
+    console.error('[EDITH] generateAssistantReply failed:', err.message);
+    return 'All AI systems are currently overloaded. Recalibrate and try again.';
+  }
+}
+
+/**
+ * Evaluate a user's quest response and return a structured score.
+ */
+export async function evaluateUserResponse(quest, responseText) {
+  const FALLBACK = {
+    score: 80,
+    feedback: 'System fallback triggered. Effort detected.',
+    completed: true,
+  };
+
+  try {
+    const { content } = await callOpenRouter(
+      {
+        messages: [{ role: 'system', content: buildEvaluationSystemPrompt(quest, responseText) }],
+        temperature: 0.3,
+        max_tokens: 200,
+        response_format: { type: 'json_object' },
+      },
+      { tryAllModels: false } // evaluation needs the best model only
+    );
+
+    const parsed = safeJsonParse(content);
+    return parsed || FALLBACK;
+  } catch (err) {
+    console.error('[EDITH] evaluateUserResponse failed:', err.message);
+    return FALLBACK;
   }
 }

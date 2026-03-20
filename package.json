@@ -19,5 +19,8 @@
   ],
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "react-markdown": "^10.1.0"
   }
 }

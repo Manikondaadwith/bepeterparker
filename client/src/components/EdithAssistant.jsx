@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api/client';
 import { MessageCircle, X, Send, Loader2, Sparkles, Mic } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 export default function EdithAssistant() {
   const [open, setOpen] = useState(false);
@@ -177,7 +178,28 @@ export default function EdithAssistant() {
                       borderBottomLeftRadius: 4,
                     }}
                   >
-                    {msg.text}
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p style={{ margin: '4px 0' }}>{children}</p>,
+                        ul: ({ children }) => <ul style={{ paddingLeft: '18px', margin: '6px 0' }}>{children}</ul>,
+                        ol: ({ children }) => <ol style={{ paddingLeft: '18px', margin: '6px 0' }}>{children}</ol>,
+                        li: ({ children }) => <li style={{ marginBottom: '4px' }}>{children}</li>,
+                        h1: ({ children }) => <h1 style={{ fontSize: '16px', fontWeight: 'bold' }}>{children}</h1>,
+                        h2: ({ children }) => <h2 style={{ fontSize: '14px', fontWeight: 'bold' }}>{children}</h2>,
+                        code: ({ inline, children }) =>
+                          inline ? (
+                            <code style={{ background: '#222', padding: '2px 4px', borderRadius: 4 }}>
+                              {children}
+                            </code>
+                          ) : (
+                            <pre style={{ background: '#111', padding: '10px', borderRadius: 8 }}>
+                              <code>{children}</code>
+                            </pre>
+                          ),
+                      }}
+                    >
+                      {msg.text}
+                    </ReactMarkdown>
                   </div>
                 </motion.div>
               ))}
