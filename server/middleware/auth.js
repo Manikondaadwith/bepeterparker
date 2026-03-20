@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken';
 /**
  * Lazy-loads the JWT secret to prevent top-level crashes.
  */
